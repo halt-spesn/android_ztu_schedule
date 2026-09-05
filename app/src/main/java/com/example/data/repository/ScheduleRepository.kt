@@ -39,6 +39,15 @@ class ScheduleRepository(
         const val DEFAULT_GROUP_ID = "612"
         const val DEFAULT_GROUP_NAME = "КІ-26-1"
 
+        const val KEY_WIDGET_STYLE = "widget_style"
+        const val KEY_WIDGET_OPACITY = "widget_opacity"
+
+        const val WIDGET_STYLE_GLASS = "GLASS"
+        const val WIDGET_STYLE_SYSTEM = "SYSTEM"
+        const val WIDGET_STYLE_MONET = "MONET"
+        const val WIDGET_STYLE_DARK = "DARK"
+        const val WIDGET_STYLE_LIGHT = "LIGHT"
+
         const val ACTION_SCHEDULE_UPDATED = "com.example.ACTION_SCHEDULE_UPDATED"
     }
 
@@ -52,6 +61,29 @@ class ScheduleRepository(
 
     fun setDynamicColorEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_DYNAMIC_COLOR, enabled).apply()
+    }
+
+    fun getWidgetStyle(): String {
+        val defaultStyle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            WIDGET_STYLE_MONET
+        } else {
+            WIDGET_STYLE_GLASS
+        }
+        return prefs.getString(KEY_WIDGET_STYLE, defaultStyle) ?: defaultStyle
+    }
+
+    fun setWidgetStyle(style: String) {
+        prefs.edit().putString(KEY_WIDGET_STYLE, style).apply()
+        notifyWidgetUpdate()
+    }
+
+    fun getWidgetOpacity(): Int {
+        return prefs.getInt(KEY_WIDGET_OPACITY, 85)
+    }
+
+    fun setWidgetOpacity(opacity: Int) {
+        prefs.edit().putInt(KEY_WIDGET_OPACITY, opacity).apply()
+        notifyWidgetUpdate()
     }
 
     fun getSelectedGroupId(): String {

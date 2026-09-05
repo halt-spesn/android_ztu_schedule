@@ -7,4 +7,19 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Widget Light Colors -->
+    <color name="widget_bg">#F2FAF7FD</color>
+    <color name="widget_stroke">#2479747E</color>
+    <color name="widget_card_bg">#E6F5EFF7</color>
+    <color name="widget_card_stroke">#1479747E</color>
+    <color name="widget_chip_bg">#6750A4</color>
+    <color name="widget_chip_text">#FFFFFFFF</color>
+    <color name="widget_text_title">#1D1B20</color>
+    <color name="widget_text_secondary">#49454F</color>
+    <color name="widget_text_meta">#79747E</color>
+    <color name="widget_text_footer">#938F99</color>
+    <color name="widget_divider">#1F79747E</color>
+    <color name="widget_accent">#6750A4</color>
+    <color name="widget_refresh_tint">#6750A4</color>
 </resources>

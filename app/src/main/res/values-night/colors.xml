@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget Dark / Night / Frosted Glassmorphism Colors -->
+    <!-- Translucent frosted dark acrylic with 80% alpha, letting the wallpaper glow through -->
+    <color name="widget_bg">#CC1A1210</color>
+    <color name="widget_stroke">#2BFFFFFF</color>
+    <color name="widget_card_bg">#24FFFFFF</color>
+    <color name="widget_card_stroke">#17FFFFFF</color>
+    <color name="widget_chip_bg">#FF8A65</color>
+    <color name="widget_chip_text">#1C1210</color>
+    <color name="widget_text_title">#FFF3EF</color>
+    <color name="widget_text_secondary">#D6C2BC</color>
+    <color name="widget_text_meta">#BAA69F</color>
+    <color name="widget_text_footer">#9C8B85</color>
+    <color name="widget_divider">#1AFFFFFF</color>
+    <color name="widget_accent">#FF8A65</color>
+    <color name="widget_refresh_tint">#FF8A65</color>
+</resources>

@@ -6,6 +6,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Color
+import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -101,6 +104,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             val repo = ScheduleRepository(context)
             val groupId = repo.getSelectedGroupId()
             val groupName = repo.getSelectedGroupName()
+            val widgetStyle = repo.getWidgetStyle()
+            val widgetOpacity = repo.getWidgetOpacity()
 
             // Header title
             views.setTextViewText(R.id.widget_title, "ЖТУ • $groupName")
@@ -114,8 +119,11 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_day_info, "Сьогодні: $dayOfWeek, $dateStr")
 
             // Icons
-            views.setImageViewResource(R.id.widget_app_icon, R.mipmap.ic_launcher)
+            views.setImageViewResource(R.id.widget_app_icon, R.drawable.ic_widget_header_icon)
             views.setImageViewResource(R.id.widget_btn_refresh, R.drawable.ic_refresh)
+
+            // Dynamic Styling (Backgrounds, Card outlines, Accent tints)
+            applyWidgetStyling(context, views, widgetStyle, widgetOpacity)
 
             // Click on widget opens MainActivity
             val appIntent = Intent(context, MainActivity::class.java).apply {
@@ -161,6 +169,13 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_pair_2, View.GONE)
                 views.setViewVisibility(R.id.widget_pair_3, View.GONE)
                 views.setViewVisibility(R.id.widget_more_pairs, View.GONE)
+
+                val isWeekend = cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
+                views.setTextViewText(R.id.widget_empty_title, "Сьогодні занять немає 🎉")
+                views.setTextViewText(
+                    R.id.widget_empty_subtitle,
+                    if (isWeekend) "Гарних вихідних та продуктивного відпочинку!" else "Гарного дня та продуктивного відпочинку!"
+                )
             } else {
                 views.setViewVisibility(R.id.widget_empty_view, View.GONE)
 
@@ -188,6 +203,165 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             appWidgetManager.updateAppWidget(appWidgetId, views)
         } catch (e: Exception) {
             Log.e("ScheduleWidget", "Error updating widget $appWidgetId", e)
+        }
+    }
+
+    private fun applyWidgetStyling(
+        context: Context,
+        views: RemoteViews,
+        style: String,
+        opacity: Int
+    ) {
+        val isDarkTheme = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val isMonetSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+        val bgRes = when (style) {
+            ScheduleRepository.WIDGET_STYLE_GLASS -> {
+                if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
+            }
+            ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_bg_dark
+            ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_bg_light
+            ScheduleRepository.WIDGET_STYLE_MONET -> {
+                if (isMonetSupported) {
+                    if (isDarkTheme) R.drawable.ic_widget_bg_monet_dark else R.drawable.ic_widget_bg_monet_light
+                } else {
+                    R.drawable.ic_widget_bg_monet
+                }
+            }
+            ScheduleRepository.WIDGET_STYLE_SYSTEM -> {
+                if (isMonetSupported) {
+                    if (isDarkTheme) R.drawable.ic_widget_bg_monet_dark else R.drawable.ic_widget_bg_monet_light
+                } else if (isDarkTheme) {
+                    if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
+                } else {
+                    R.drawable.ic_widget_bg
+                }
+            }
+            else -> {
+                if (isMonetSupported) {
+                    if (isDarkTheme) R.drawable.ic_widget_bg_monet_dark else R.drawable.ic_widget_bg_monet_light
+                } else {
+                    R.drawable.ic_widget_bg_monet
+                }
+            }
+        }
+
+        val cardBgRes = when (style) {
+            ScheduleRepository.WIDGET_STYLE_GLASS -> R.drawable.ic_widget_card_bg_glass
+            ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_card_bg_dark
+            ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_card_bg_light
+            ScheduleRepository.WIDGET_STYLE_MONET -> {
+                if (isMonetSupported) {
+                    if (isDarkTheme) R.drawable.ic_widget_card_bg_monet_dark else R.drawable.ic_widget_card_bg_monet_light
+                } else {
+                    R.drawable.ic_widget_card_bg_monet
+                }
+            }
+            ScheduleRepository.WIDGET_STYLE_SYSTEM -> {
+                if (isMonetSupported) {
+                    if (isDarkTheme) R.drawable.ic_widget_card_bg_monet_dark else R.drawable.ic_widget_card_bg_monet_light
+                } else if (isDarkTheme) {
+                    R.drawable.ic_widget_card_bg_glass
+                } else {
+                    R.drawable.ic_widget_card_bg
+                }
+            }
+            else -> {
+                if (isMonetSupported) {
+                    if (isDarkTheme) R.drawable.ic_widget_card_bg_monet_dark else R.drawable.ic_widget_card_bg_monet_light
+                } else {
+                    R.drawable.ic_widget_card_bg_monet
+                }
+            }
+        }
+
+        views.setInt(R.id.widget_root, "setBackgroundResource", bgRes)
+        views.setInt(R.id.widget_pair_1, "setBackgroundResource", cardBgRes)
+        views.setInt(R.id.widget_pair_2, "setBackgroundResource", cardBgRes)
+        views.setInt(R.id.widget_pair_3, "setBackgroundResource", cardBgRes)
+
+        // Accent and text color calculation based on theme and Monet
+        val isMonetActive = (style == ScheduleRepository.WIDGET_STYLE_MONET || style == ScheduleRepository.WIDGET_STYLE_SYSTEM) && isMonetSupported
+
+        val accentColor = if (isMonetActive) {
+            try {
+                if (isDarkTheme) {
+                    context.getColor(android.R.color.system_accent1_200)
+                } else {
+                    context.getColor(android.R.color.system_accent1_600)
+                }
+            } catch (e: Exception) {
+                Color.parseColor("#FF8A65")
+            }
+        } else if (style == ScheduleRepository.WIDGET_STYLE_LIGHT) {
+            Color.parseColor("#6750A4")
+        } else {
+            // Warm amber accent for dark/glass theme
+            Color.parseColor("#FF8A65")
+        }
+
+        // Apply dynamic accent color to header icon, refresh button, and more pairs text
+        views.setInt(R.id.widget_btn_refresh, "setColorFilter", accentColor)
+        views.setInt(R.id.widget_app_icon, "setColorFilter", accentColor)
+        views.setTextColor(R.id.widget_more_pairs, accentColor)
+
+        // Apply text colors based on style and Monet
+        if (isMonetActive) {
+            try {
+                val titleColor = if (isDarkTheme) {
+                    context.getColor(android.R.color.system_neutral1_100)
+                } else {
+                    context.getColor(android.R.color.system_neutral1_900)
+                }
+                val secondaryColor = if (isDarkTheme) {
+                    context.getColor(android.R.color.system_neutral2_200)
+                } else {
+                    context.getColor(android.R.color.system_neutral2_700)
+                }
+                val footerColor = if (isDarkTheme) {
+                    context.getColor(android.R.color.system_neutral2_400)
+                } else {
+                    context.getColor(android.R.color.system_neutral2_500)
+                }
+
+                val dividerColor = if (isDarkTheme) {
+                    context.getColor(android.R.color.system_neutral2_700)
+                } else {
+                    context.getColor(android.R.color.system_neutral2_200)
+                }
+
+                views.setInt(R.id.widget_divider, "setBackgroundColor", dividerColor)
+                views.setTextColor(R.id.widget_title, titleColor)
+                views.setTextColor(R.id.widget_day_info, secondaryColor)
+                views.setTextColor(R.id.widget_empty_title, titleColor)
+                views.setTextColor(R.id.widget_empty_subtitle, secondaryColor)
+                views.setTextColor(R.id.widget_footer, footerColor)
+
+                views.setTextColor(R.id.widget_pair_1_subject, titleColor)
+                views.setTextColor(R.id.widget_pair_1_meta, secondaryColor)
+                views.setTextColor(R.id.widget_pair_2_subject, titleColor)
+                views.setTextColor(R.id.widget_pair_2_meta, secondaryColor)
+                views.setTextColor(R.id.widget_pair_3_subject, titleColor)
+                views.setTextColor(R.id.widget_pair_3_meta, secondaryColor)
+
+                // Pair number badge chip colors in Monet mode
+                val chipBg = if (isDarkTheme) {
+                    context.getColor(android.R.color.system_accent1_200)
+                } else {
+                    context.getColor(android.R.color.system_accent1_600)
+                }
+                val chipTextColor = if (isDarkTheme) {
+                    context.getColor(android.R.color.system_accent1_900)
+                } else {
+                    context.getColor(android.R.color.system_accent1_0)
+                }
+                listOf(R.id.widget_pair_1_num, R.id.widget_pair_2_num, R.id.widget_pair_3_num).forEach { numId ->
+                    views.setInt(numId, "setBackgroundColor", chipBg)
+                    views.setTextColor(numId, chipTextColor)
+                }
+            } catch (e: Exception) {
+                Log.e("ScheduleWidget", "Could not apply Monet text colors", e)
+            }
         }
     }
 

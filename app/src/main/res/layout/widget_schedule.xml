@@ -19,7 +19,7 @@
             android:id="@+id/widget_app_icon"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@mipmap/ic_launcher"
+            android:src="@drawable/ic_widget_header_icon"
             android:contentDescription="ZTU Icon" />
 
         <LinearLayout
@@ -34,7 +34,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="ЖТУ • КІ-26-1"
-                android:textColor="#21005D"
+                android:textColor="@color/widget_text_title"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:maxLines="1" />
@@ -44,7 +44,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Сьогодні: Пн, 31.08"
-                android:textColor="#49454F"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="11sp"
                 android:maxLines="1" />
         </LinearLayout>
@@ -60,11 +60,12 @@
 
     <!-- Divider (FrameLayout is valid in RemoteViews, plain View is not) -->
     <FrameLayout
+        android:id="@+id/widget_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
-        android:background="#E8DEF8" />
+        android:background="@color/widget_divider" />
 
     <!-- Schedule Items Container -->
     <LinearLayout
@@ -93,7 +94,7 @@
                 android:background="@drawable/ic_widget_chip_bg"
                 android:gravity="center"
                 android:text="1"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_chip_text"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -111,7 +112,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="Предмет"
-                    android:textColor="#1D1B20"
+                    android:textColor="@color/widget_text_title"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -122,7 +123,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="08:30-09:50 • Лекція • ауд. 233"
-                    android:textColor="#49454F"
+                    android:textColor="@color/widget_text_secondary"
                     android:textSize="10sp" />
             </LinearLayout>
         </LinearLayout>
@@ -146,7 +147,7 @@
                 android:background="@drawable/ic_widget_chip_bg"
                 android:gravity="center"
                 android:text="2"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_chip_text"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -164,7 +165,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="Предмет"
-                    android:textColor="#1D1B20"
+                    android:textColor="@color/widget_text_title"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -175,7 +176,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="10:00-11:20 • Практичне • ауд. 315"
-                    android:textColor="#49454F"
+                    android:textColor="@color/widget_text_secondary"
                     android:textSize="10sp" />
             </LinearLayout>
         </LinearLayout>
@@ -198,7 +199,7 @@
                 android:background="@drawable/ic_widget_chip_bg"
                 android:gravity="center"
                 android:text="3"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_chip_text"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -216,7 +217,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="Предмет"
-                    android:textColor="#1D1B20"
+                    android:textColor="@color/widget_text_title"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -227,7 +228,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="11:40-13:00 • Лабораторна • ауд. ОЦ 102"
-                    android:textColor="#49454F"
+                    android:textColor="@color/widget_text_secondary"
                     android:textSize="10sp" />
             </LinearLayout>
         </LinearLayout>
@@ -240,7 +241,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="2dp"
             android:text="+ ще 2 пари (натисніть щоб переглянути)"
-            android:textColor="#6750A4"
+            android:textColor="@color/widget_accent"
             android:textSize="10sp"
             android:visibility="gone" />
 
@@ -258,16 +259,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Сьогодні занять немає 🎉"
-                android:textColor="#21005D"
+                android:textColor="@color/widget_text_title"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/widget_empty_subtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Гарного дня та продуктивного відпочинку!"
-                android:textColor="#49454F"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
@@ -280,7 +282,7 @@
         android:layout_marginTop="4dp"
         android:gravity="end"
         android:text="Оновлено щойно"
-        android:textColor="#79747E"
+        android:textColor="@color/widget_text_footer"
         android:textSize="10sp" />
 
 </LinearLayout>

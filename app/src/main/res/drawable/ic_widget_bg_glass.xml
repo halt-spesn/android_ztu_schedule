@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/widget_bg" />
+    <!-- Frosted dark glass: ~80% alpha dark acrylic, letting wallpaper shine through -->
+    <solid android:color="#CC1A1210" />
     <corners android:radius="28dp" />
     <stroke
         android:width="1dp"
-        android:color="@color/widget_stroke" />
+        android:color="#2EFFFFFF" />
 </shape>
-

@@ -31,6 +31,8 @@ data class ScheduleUiState(
     val selectedGroupName: String = "",
     val isDynamicColor: Boolean = true,
     val isThemeDialogVisible: Boolean = false,
+    val widgetStyle: String = ScheduleRepository.WIDGET_STYLE_MONET,
+    val widgetOpacity: Int = 85,
     val selectedWeekNumber: Int = 0,
     val selectedDayIndex: Int = 0,
     val subgroupFilter: String = "ALL", // "ALL", "підгр. 1", "підгр. 2"
@@ -120,6 +122,8 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
             selectedGroupId = repository.getSelectedGroupId(),
             selectedGroupName = repository.getSelectedGroupName(),
             isDynamicColor = repository.isDynamicColorEnabled(),
+            widgetStyle = repository.getWidgetStyle(),
+            widgetOpacity = repository.getWidgetOpacity(),
             subgroupFilter = repository.getSubgroupFilter(),
             todayDateStr = getTodayFormattedDate(),
             selectedDayIndex = getCurrentDayIndex()
@@ -253,6 +257,16 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     fun toggleDynamicColor(enabled: Boolean) {
         repository.setDynamicColorEnabled(enabled)
         _uiState.update { it.copy(isDynamicColor = enabled) }
+    }
+
+    fun setWidgetStyle(style: String) {
+        repository.setWidgetStyle(style)
+        _uiState.update { it.copy(widgetStyle = style) }
+    }
+
+    fun setWidgetOpacity(opacity: Int) {
+        repository.setWidgetOpacity(opacity)
+        _uiState.update { it.copy(widgetOpacity = opacity) }
     }
 
     fun showThemeDialog(visible: Boolean) {

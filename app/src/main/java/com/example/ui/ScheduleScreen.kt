@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.os.Build
+import com.example.data.repository.ScheduleRepository
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -14,6 +15,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -588,11 +591,15 @@ fun ScheduleScreen(
         WidgetGuideDialog(onDismiss = { viewModel.showWidgetGuide(false) })
     }
 
-    // Theme Settings Dialog (Monet / Material You)
+    // Theme Settings Dialog (Monet / Material You & Widget Styling)
     if (uiState.isThemeDialogVisible) {
         ThemeSettingsDialog(
             isDynamicColor = uiState.isDynamicColor,
+            widgetStyle = uiState.widgetStyle,
+            widgetOpacity = uiState.widgetOpacity,
             onToggleDynamicColor = { viewModel.toggleDynamicColor(it) },
+            onSelectWidgetStyle = { viewModel.setWidgetStyle(it) },
+            onSelectWidgetOpacity = { viewModel.setWidgetOpacity(it) },
             onDismiss = { viewModel.showThemeDialog(false) }
         )
     }
@@ -806,10 +813,15 @@ fun LiveWidgetPreviewCard(
 @Composable
 fun ThemeSettingsDialog(
     isDynamicColor: Boolean,
+    widgetStyle: String,
+    widgetOpacity: Int,
     onToggleDynamicColor: (Boolean) -> Unit,
+    onSelectWidgetStyle: (String) -> Unit,
+    onSelectWidgetOpacity: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val isMonetSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val scrollState = rememberScrollState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -820,7 +832,7 @@ fun ThemeSettingsDialog(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
@@ -829,25 +841,34 @@ fun ThemeSettingsDialog(
                         imageVector = Icons.Default.Palette,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
-                Text(
-                    text = "Оформлення та тема",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                Column {
+                    Text(
+                        text = "Оформлення та віджет",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Material You & Glassmorphism",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .verticalScroll(scrollState)
+                    .padding(top = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Section 1: Monet Engine Switch
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                     modifier = Modifier.fillMaxWidth()
@@ -855,26 +876,26 @@ fun ThemeSettingsDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(end = 12.dp)
+                                .padding(end = 10.dp)
                         ) {
                             Text(
                                 text = "Динамічні кольори Monet",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = if (isMonetSupported) {
-                                    "Адаптує палітру додатку під кольори ваших шпалер (Material You / M3 Expressive)"
+                                    "Адаптує палітру під шпалери вашого пристрою (Material You / M3)"
                                 } else {
-                                    "Потрібен Android 12+ для підтримки динамічних кольорів Monet"
+                                    "Потрібен Android 12+ для динамічних кольорів Monet"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -890,7 +911,7 @@ fun ThemeSettingsDialog(
                     }
                 }
 
-                // Palette preview swatches
+                // Section 2: System palette swatches
                 Text(
                     text = "ПОТОЧНА ПАЛІТРА СИСТЕМИ",
                     style = MaterialTheme.typography.labelSmall,
@@ -916,12 +937,12 @@ fun ThemeSettingsDialog(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(32.dp)
                                     .clip(CircleShape)
                                     .background(color)
                                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 text = label,
                                 fontSize = 9.sp,
@@ -931,17 +952,233 @@ fun ThemeSettingsDialog(
                         }
                     }
                 }
+
+                // Section 3: Widget Appearance Mode
+                Text(
+                    text = "ДИЗАЙН ВІДЖЕТА НА РОБОЧОМУ СТОЛІ",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(
+                        "✨ Скло" to ScheduleRepository.WIDGET_STYLE_GLASS,
+                        "🎨 Monet" to ScheduleRepository.WIDGET_STYLE_MONET,
+                        "📱 Авто" to ScheduleRepository.WIDGET_STYLE_SYSTEM,
+                        "🌑 Темний" to ScheduleRepository.WIDGET_STYLE_DARK,
+                        "☀️ Світлий" to ScheduleRepository.WIDGET_STYLE_LIGHT
+                    ).forEach { (label, styleKey) ->
+                        val isSelected = widgetStyle == styleKey
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { onSelectWidgetStyle(styleKey) },
+                            label = {
+                                Text(
+                                    text = label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
+                            modifier = Modifier.testTag("widget_style_$styleKey")
+                        )
+                    }
+                }
+
+                // Section 4: Widget Opacity
+                if (widgetStyle == ScheduleRepository.WIDGET_STYLE_GLASS || widgetStyle == ScheduleRepository.WIDGET_STYLE_SYSTEM) {
+                    Text(
+                        text = "ПРОЗОРІСТЬ МАТОВОГО СКЛА",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "70% Прозоре" to 70,
+                            "85% Матове" to 85,
+                            "100% Суцільне" to 100
+                        ).forEach { (label, opacityVal) ->
+                            val isSelected = widgetOpacity == opacityVal
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { onSelectWidgetOpacity(opacityVal) },
+                                label = {
+                                    Text(
+                                        text = label,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                ),
+                                modifier = Modifier.testTag("widget_opacity_$opacityVal")
+                            )
+                        }
+                    }
+                }
+
+                // Section 5: Live Widget Preview Card
+                Text(
+                    text = "ПОПЕРЕДНІЙ ПЕРЕГЛЯД ВІДЖЕТА",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Simulated Wallpaper + Frosted Glass / Monet Widget
+                val previewBg = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surface
+                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFFDF8FD)
+                    ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF14100F)
+                    else -> Color(0xFF1E1715).copy(alpha = if (widgetOpacity <= 75) 0.72f else 0.88f)
+                }
+                val previewCardBg = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surfaceVariant
+                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFECE5ED)
+                    ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF2B2220)
+                    else -> Color(0xFFFFFFFF).copy(alpha = 0.14f)
+                }
+                val previewTitleColor = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.onSurface
+                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF1D1B20)
+                    else -> Color(0xFFF6EEF5)
+                }
+                val previewSubtitleColor = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.onSurfaceVariant
+                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF49454F)
+                    else -> Color(0xFFD6C8CE)
+                }
+                val previewAccent = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.primary
+                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF6750A4)
+                    else -> Color(0xFFFF8A65)
+                }
+
+                val previewRootBorder = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    else -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.22f))
+                }
+                val previewBorder = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    else -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.12f))
+                }
+                val previewChipTextColor = when (widgetStyle) {
+                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.onPrimary
+                    else -> Color.White
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = previewBg,
+                    border = previewRootBorder,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        // Header
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.School,
+                                    contentDescription = null,
+                                    tint = previewAccent,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = "ЖТУ • КІ-26-1",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = previewTitleColor
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = previewAccent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Preview Pair Row
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = previewCardBg,
+                            border = previewBorder,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(previewAccent),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("1", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = previewChipTextColor)
+                                }
+                                Column {
+                                    Text(
+                                        text = "Комп'ютерна графіка",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = previewTitleColor
+                                    )
+                                    Text(
+                                        text = "08:30-09:50 • Лекція • ауд. 233",
+                                        fontSize = 9.sp,
+                                        color = previewSubtitleColor
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = onDismiss,
                 modifier = Modifier.testTag("close_theme_dialog_button")
             ) {
-                Text("Готово", fontWeight = FontWeight.SemiBold)
+                Text("Застосувати", fontWeight = FontWeight.SemiBold)
             }
         },
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(26.dp)
     )
 }
 
