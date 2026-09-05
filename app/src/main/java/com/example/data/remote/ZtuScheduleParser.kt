@@ -12,15 +12,26 @@ import java.util.regex.Pattern
 
 object ZtuScheduleParser {
 
-    fun parseScheduleHtml(html: String, defaultGroupId: String = "612"): ScheduleData {
+    fun parseScheduleHtml(
+        html: String,
+        defaultGroupId: String = "612",
+        fallbackGroupName: String = ""
+    ): ScheduleData {
         val doc: Document = Jsoup.parse(html)
 
         // Extract group name and faculty from header
         val titleEl = doc.selectFirst(".sch-title h1")
-        val groupName = titleEl?.text()?.trim() ?: "КІ-26-1"
+            ?: doc.selectFirst(".sch-title h2")
+            ?: doc.selectFirst("header.sch-head h1")
+            ?: doc.selectFirst("h1")
+        val parsedGroupName = titleEl?.text()?.trim()?.ifBlank { null }
+        val groupName = parsedGroupName
+            ?: fallbackGroupName.ifBlank { null }
+            ?: "Група $defaultGroupId"
 
         val facultyEl = doc.selectFirst(".sch-title .sch-faculty")
-        val faculty = facultyEl?.text()?.trim() ?: "Факультет інформаційно-комп'ютерних технологій"
+            ?: doc.selectFirst(".sch-faculty")
+        val faculty = facultyEl?.text()?.trim() ?: "Житомирська політехніка"
 
         val noticeEl = doc.selectFirst(".sch-notice")
         val notice = noticeEl?.text()?.trim() ?: ""

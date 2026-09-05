@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import com.example.data.local.AppDatabase
 import com.example.data.local.GroupEntity
@@ -31,6 +32,7 @@ class ScheduleRepository(
 ) {
     companion object {
         const val PREFS_NAME = "ztu_schedule_prefs"
+        const val KEY_DYNAMIC_COLOR = "dynamic_color_enabled"
         const val KEY_SELECTED_GROUP_ID = "selected_group_id"
         const val KEY_SELECTED_GROUP_NAME = "selected_group_name"
         const val KEY_SUBGROUP_FILTER = "subgroup_filter" // "ALL", "1", "2"
@@ -41,6 +43,16 @@ class ScheduleRepository(
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    fun isDynamicColorEnabled(): Boolean {
+        // Material You / Monet is supported on Android 12 (API 31, S) and newer; default to true there
+        val defaultEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        return prefs.getBoolean(KEY_DYNAMIC_COLOR, defaultEnabled)
+    }
+
+    fun setDynamicColorEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_DYNAMIC_COLOR, enabled).apply()
+    }
 
     fun getSelectedGroupId(): String {
         return prefs.getString(KEY_SELECTED_GROUP_ID, DEFAULT_GROUP_ID) ?: DEFAULT_GROUP_ID
@@ -145,12 +157,19 @@ class ScheduleRepository(
     suspend fun refreshSchedule(groupId: String): Result<ScheduleData> = withContext(Dispatchers.IO) {
         try {
             val html = api.fetchScheduleHtml(groupId)
-            val scheduleData = ZtuScheduleParser.parseScheduleHtml(html, defaultGroupId = groupId)
+            val fallbackName = if (groupId == getSelectedGroupId()) getSelectedGroupName() else "Група $groupId"
+            val scheduleData = ZtuScheduleParser.parseScheduleHtml(
+                html = html,
+                defaultGroupId = groupId,
+                fallbackGroupName = fallbackName
+            )
+
+            val resolvedGroupName = if (scheduleData.groupName.isNotBlank()) scheduleData.groupName else fallbackName
 
             // Save to database
             val metadataEntity = MetadataEntity(
                 groupId = groupId,
-                groupName = scheduleData.groupName,
+                groupName = resolvedGroupName,
                 faculty = scheduleData.faculty,
                 notice = scheduleData.notice,
                 lastUpdatedMillis = scheduleData.lastUpdatedMillis
@@ -172,7 +191,7 @@ class ScheduleRepository(
             }
 
             dao.updateScheduleData(groupId, metadataEntity, weekEntities, pairEntities)
-            setSelectedGroupId(groupId, scheduleData.groupName)
+            setSelectedGroupId(groupId, resolvedGroupName)
 
             // Notify widget to update
             notifyWidgetUpdate()

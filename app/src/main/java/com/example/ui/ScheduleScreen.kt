@@ -1,5 +1,6 @@
 package com.example.ui
 
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -11,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +37,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Search
@@ -57,6 +60,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -152,7 +156,7 @@ fun ScheduleScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = uiState.scheduleData?.groupName ?: "КІ-26-1",
+                                    text = uiState.displayGroupName,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 20.sp
@@ -184,6 +188,20 @@ fun ScheduleScreen(
                             imageVector = if (isSearchExpanded) Icons.Default.Clear else Icons.Default.Search,
                             contentDescription = "Пошук дисциплін",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Monet / Material You Theme Settings
+                    IconButton(
+                        onClick = { viewModel.showThemeDialog(true) },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .testTag("theme_settings_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = "Оформлення та тема",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -555,7 +573,7 @@ fun ScheduleScreen(
     // Group Selection Dialog
     if (uiState.isGroupDialogVisible) {
         GroupSelectionDialog(
-            currentGroupId = uiState.scheduleData?.groupId ?: "612",
+            currentGroupId = uiState.displayGroupId,
             groups = uiState.cachedGroups,
             isLoadingGroups = uiState.isLoadingGroups,
             onGroupSelected = { id, name ->
@@ -568,6 +586,15 @@ fun ScheduleScreen(
     // Widget Guide Dialog
     if (uiState.isWidgetGuideVisible) {
         WidgetGuideDialog(onDismiss = { viewModel.showWidgetGuide(false) })
+    }
+
+    // Theme Settings Dialog (Monet / Material You)
+    if (uiState.isThemeDialogVisible) {
+        ThemeSettingsDialog(
+            isDynamicColor = uiState.isDynamicColor,
+            onToggleDynamicColor = { viewModel.toggleDynamicColor(it) },
+            onDismiss = { viewModel.showThemeDialog(false) }
+        )
     }
 }
 
@@ -774,5 +801,147 @@ fun LiveWidgetPreviewCard(
             )
         }
     }
+}
+
+@Composable
+fun ThemeSettingsDialog(
+    isDynamicColor: Boolean,
+    onToggleDynamicColor: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isMonetSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Text(
+                    text = "Оформлення та тема",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp)
+                        ) {
+                            Text(
+                                text = "Динамічні кольори Monet",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isMonetSupported) {
+                                    "Адаптує палітру додатку під кольори ваших шпалер (Material You / M3 Expressive)"
+                                } else {
+                                    "Потрібен Android 12+ для підтримки динамічних кольорів Monet"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Switch(
+                            checked = isDynamicColor && isMonetSupported,
+                            onCheckedChange = { onToggleDynamicColor(it) },
+                            enabled = isMonetSupported,
+                            modifier = Modifier.testTag("monet_toggle_switch")
+                        )
+                    }
+                }
+
+                // Palette preview swatches
+                Text(
+                    text = "ПОТОЧНА ПАЛІТРА СИСТЕМИ",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        "Primary" to MaterialTheme.colorScheme.primary,
+                        "Secondary" to MaterialTheme.colorScheme.secondary,
+                        "Tertiary" to MaterialTheme.colorScheme.tertiary,
+                        "Container" to MaterialTheme.colorScheme.primaryContainer,
+                        "Surface" to MaterialTheme.colorScheme.surfaceVariant
+                    ).forEach { (label, color) ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = label,
+                                fontSize = 9.sp,
+                                maxLines = 1,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag("close_theme_dialog_button")
+            ) {
+                Text("Готово", fontWeight = FontWeight.SemiBold)
+            }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
 }
 

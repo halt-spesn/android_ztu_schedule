@@ -11,6 +11,7 @@ import com.example.data.model.ScheduleGroup
 import com.example.data.model.SchedulePair
 import com.example.data.model.ScheduleWeek
 import com.example.data.repository.ScheduleRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,10 @@ data class ScheduleUiState(
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
     val scheduleData: ScheduleData? = null,
+    val selectedGroupId: String = "",
+    val selectedGroupName: String = "",
+    val isDynamicColor: Boolean = true,
+    val isThemeDialogVisible: Boolean = false,
     val selectedWeekNumber: Int = 0,
     val selectedDayIndex: Int = 0,
     val subgroupFilter: String = "ALL", // "ALL", "підгр. 1", "підгр. 2"
@@ -37,6 +42,16 @@ data class ScheduleUiState(
     val isOffline: Boolean = false,
     val todayDateStr: String = ""
 ) {
+    val displayGroupName: String
+        get() = scheduleData?.groupName?.ifBlank { null }
+            ?: selectedGroupName.ifBlank { null }
+            ?: "КІ-26-1"
+
+    val displayGroupId: String
+        get() = scheduleData?.groupId?.ifBlank { null }
+            ?: selectedGroupId.ifBlank { null }
+            ?: "612"
+
     val currentWeek: ScheduleWeek?
         get() = scheduleData?.weeks?.find { it.weekNumber == selectedWeekNumber }
             ?: scheduleData?.weeks?.firstOrNull()
@@ -97,9 +112,14 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
             ?: ScheduleRepository(application)
 
     private var hasUserManuallyNavigated: Boolean = false
+    private var observeJob: Job? = null
+    private var refreshJob: Job? = null
 
     private val _uiState = MutableStateFlow(
         ScheduleUiState(
+            selectedGroupId = repository.getSelectedGroupId(),
+            selectedGroupName = repository.getSelectedGroupName(),
+            isDynamicColor = repository.isDynamicColorEnabled(),
             subgroupFilter = repository.getSubgroupFilter(),
             todayDateStr = getTodayFormattedDate(),
             selectedDayIndex = getCurrentDayIndex()
@@ -116,10 +136,14 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun observeDatabaseSchedule(groupId: String) {
-        viewModelScope.launch {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
             repository.observeSchedule(groupId).collect { cachedData ->
-                if (cachedData != null) {
-                    _uiState.update { state ->
+                _uiState.update { state ->
+                    // Guard against race conditions if group changed
+                    if (state.selectedGroupId != groupId) return@update state
+
+                    if (cachedData != null) {
                         val targetSelection = if (!hasUserManuallyNavigated) {
                             determineCurrentWeekAndDay(cachedData)
                         } else null
@@ -137,25 +161,30 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                         state.copy(
                             isLoading = false,
                             scheduleData = cachedData,
+                            selectedGroupName = cachedData.groupName.ifBlank { state.selectedGroupName },
                             selectedWeekNumber = weekNum,
                             selectedDayIndex = dayIdx,
                             todayDateStr = getTodayFormattedDate()
                         )
+                    } else {
+                        // Keep scheduleData null if not yet cached for this group
+                        state
                     }
                 }
             }
         }
     }
 
-    fun refreshSchedule(silent: Boolean = false) {
-        viewModelScope.launch {
-            val currentGroupId = repository.getSelectedGroupId()
+    private fun refreshScheduleForGroup(groupId: String, silent: Boolean = false) {
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
 
-            val result = repository.refreshSchedule(currentGroupId)
+            val result = repository.refreshSchedule(groupId)
             if (result.isSuccess) {
                 val data = result.getOrNull()
                 _uiState.update { state ->
+                    if (state.selectedGroupId != groupId) return@update state
                     val updatedData = data ?: state.scheduleData
                     val targetSelection = if (!hasUserManuallyNavigated && updatedData != null) {
                         determineCurrentWeekAndDay(updatedData)
@@ -166,31 +195,68 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                         isLoading = false,
                         isOffline = false,
                         scheduleData = updatedData,
+                        selectedGroupName = updatedData?.groupName?.ifBlank { state.selectedGroupName } ?: state.selectedGroupName,
                         selectedWeekNumber = targetSelection?.first ?: state.selectedWeekNumber,
                         selectedDayIndex = targetSelection?.second ?: state.selectedDayIndex,
                         todayDateStr = getTodayFormattedDate()
                     )
                 }
             } else {
-                val error = result.exceptionOrNull()
-                _uiState.update {
-                    it.copy(
+                _uiState.update { state ->
+                    if (state.selectedGroupId != groupId) return@update state
+                    val hasCached = state.scheduleData != null
+                    state.copy(
                         isRefreshing = false,
                         isLoading = false,
                         isOffline = true,
-                        errorMessage = if (!silent) "Не вдалося оновити розклад. Показано збережену версію." else null
+                        errorMessage = if (!silent) {
+                            if (hasCached) {
+                                "Не вдалося оновити розклад. Показано збережену версію."
+                            } else {
+                                "Не вдалося завантажити розклад для групи. Перевірте з'єднання з інтернетом."
+                            }
+                        } else null
                     )
                 }
             }
         }
     }
 
+    fun refreshSchedule(silent: Boolean = false) {
+        val currentGroupId = _uiState.value.selectedGroupId.ifBlank { repository.getSelectedGroupId() }
+        refreshScheduleForGroup(currentGroupId, silent)
+    }
+
     fun selectGroup(groupId: String, groupName: String) {
         hasUserManuallyNavigated = false
         repository.setSelectedGroupId(groupId, groupName)
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+        // Immediately clear old group data so user does not see previous group's schedule
+        _uiState.update {
+            it.copy(
+                selectedGroupId = groupId,
+                selectedGroupName = groupName,
+                scheduleData = null,
+                isLoading = true,
+                errorMessage = null,
+                isGroupDialogVisible = false
+            )
+        }
+
+        // Cancel previous database observation and start observing new group
         observeDatabaseSchedule(groupId)
-        refreshSchedule(silent = false)
+
+        // Fetch fresh schedule from server for the new group
+        refreshScheduleForGroup(groupId, silent = false)
+    }
+
+    fun toggleDynamicColor(enabled: Boolean) {
+        repository.setDynamicColorEnabled(enabled)
+        _uiState.update { it.copy(isDynamicColor = enabled) }
+    }
+
+    fun showThemeDialog(visible: Boolean) {
+        _uiState.update { it.copy(isThemeDialogVisible = visible) }
     }
 
     fun selectWeek(weekNumber: Int) {
