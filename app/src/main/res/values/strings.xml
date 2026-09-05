@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Розклад ЖТУ</string>
+    <string name="widget_name">Розклад занять</string>
+    <string name="widget_description">Віджет розкладу занять Житомирської політехніки на сьогодні</string>
+</resources>

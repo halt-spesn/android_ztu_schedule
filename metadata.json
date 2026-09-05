@@ -1,0 +1,6 @@
+{
+  "name": "Розклад ЖТУ",
+  "description": "Розклад навчальних занять Державного університету «Житомирська політехніка» (ZTU) з віджетом для головного екрана та збереженням офлайн",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
