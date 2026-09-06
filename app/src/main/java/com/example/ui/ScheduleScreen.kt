@@ -969,7 +969,6 @@ fun ThemeSettingsDialog(
                     listOf(
                         "✨ Скло" to ScheduleRepository.WIDGET_STYLE_GLASS,
                         "🎨 Monet" to ScheduleRepository.WIDGET_STYLE_MONET,
-                        "📱 Авто" to ScheduleRepository.WIDGET_STYLE_SYSTEM,
                         "🌑 Темний" to ScheduleRepository.WIDGET_STYLE_DARK,
                         "☀️ Світлий" to ScheduleRepository.WIDGET_STYLE_LIGHT
                     ).forEach { (label, styleKey) ->
@@ -1193,4 +1192,3 @@ fun ThemeSettingsDialog(
         shape = RoundedCornerShape(26.dp)
     )
 }
-

@@ -285,52 +285,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                              style == ScheduleRepository.WIDGET_STYLE_SYSTEM || 
                              style == ScheduleRepository.WIDGET_STYLE_GLASS) && isMonetSupported
 
-        // Apply dynamic Monet tint to frosted glass layers when on API 31+
-        if (isMonetSupported && (style == ScheduleRepository.WIDGET_STYLE_GLASS || style == ScheduleRepository.WIDGET_STYLE_SYSTEM)) {
-            try {
-                val glassTint = if (isDarkTheme) {
-                    val baseNeutral = context.getColor(android.R.color.system_neutral1_900)
-                    // Blend Monet neutral with dark frosted acrylic (alpha ~ 0.85)
-                    Color.argb(
-                        if (opacity <= 75) 0xB8 else 0xD9,
-                        Color.red(baseNeutral),
-                        Color.green(baseNeutral),
-                        Color.blue(baseNeutral)
-                    )
-                } else {
-                    val baseNeutral = context.getColor(android.R.color.system_neutral1_100)
-                    // Light frosted acrylic tint (alpha ~ 0.88)
-                    Color.argb(
-                        if (opacity <= 75) 0xBF else 0xE0,
-                        Color.red(baseNeutral),
-                        Color.green(baseNeutral),
-                        Color.blue(baseNeutral)
-                    )
-                }
-                views.setInt(R.id.widget_root, "setColorFilter", glassTint)
-
-                // Tint glass pair cards with subtle Monet accent / neutral tint
-                val cardGlassTint = if (isDarkTheme) {
-                    val cardNeutral = context.getColor(android.R.color.system_neutral1_700)
-                    Color.argb(0x38, Color.red(cardNeutral), Color.green(cardNeutral), Color.blue(cardNeutral))
-                } else {
-                    val cardNeutral = context.getColor(android.R.color.system_neutral2_100)
-                    Color.argb(0x40, Color.red(cardNeutral), Color.green(cardNeutral), Color.blue(cardNeutral))
-                }
-                views.setInt(R.id.widget_pair_1, "setColorFilter", cardGlassTint)
-                views.setInt(R.id.widget_pair_2, "setColorFilter", cardGlassTint)
-                views.setInt(R.id.widget_pair_3, "setColorFilter", cardGlassTint)
-            } catch (e: Exception) {
-                Log.e("ScheduleWidget", "Could not apply Monet glass tint", e)
-            }
-        } else {
-            // Clear any lingering color filters if not Monet-tinted
-            views.setInt(R.id.widget_root, "setColorFilter", 0)
-            views.setInt(R.id.widget_pair_1, "setColorFilter", 0)
-            views.setInt(R.id.widget_pair_2, "setColorFilter", 0)
-            views.setInt(R.id.widget_pair_3, "setColorFilter", 0)
-        }
-
         val accentColor = if (isMonetActive) {
             try {
                 if (isDarkTheme) {
