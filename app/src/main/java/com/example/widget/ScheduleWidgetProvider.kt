@@ -1,6 +1,7 @@
 package com.example.widget
 
 import android.app.PendingIntent
+import android.app.AlarmManager
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
@@ -9,6 +10,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -30,6 +32,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_WIDGET_REFRESH = "com.example.ACTION_WIDGET_REFRESH"
         const val ACTION_UPDATE_FROM_APP = "com.example.ACTION_UPDATE_FROM_APP"
+        private const val ACTION_WIDGET_TICK = "com.example.ACTION_WIDGET_TICK"
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 
@@ -38,6 +41,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        scheduleTick(context)
         val pendingResult = goAsync()
         scope.launch {
             try {
@@ -77,6 +81,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 }
             }
             ACTION_UPDATE_FROM_APP,
+            ACTION_WIDGET_TICK,
             AppWidgetManager.ACTION_APPWIDGET_UPDATE -> {
                 val pendingResult = goAsync()
                 scope.launch {
@@ -92,6 +97,26 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 }
             }
         }
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        if (AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, javaClass)).isEmpty()) {
+            cancelTick(context)
+        }
+        super.onDeleted(context, appWidgetIds)
+    }
+
+    private fun scheduleTick(context: Context) {
+        val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, ScheduleWidgetProvider::class.java).setAction(ACTION_WIDGET_TICK)
+        val pending = PendingIntent.getBroadcast(context, 2, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        alarm.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 60_000L, 60_000L, pending)
+    }
+
+    private fun cancelTick(context: Context) {
+        val intent = Intent(context, ScheduleWidgetProvider::class.java).setAction(ACTION_WIDGET_TICK)
+        val pending = PendingIntent.getBroadcast(context, 2, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(pending)
     }
 
     private suspend fun updateAppWidget(

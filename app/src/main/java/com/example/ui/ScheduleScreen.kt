@@ -1007,8 +1007,7 @@ fun ThemeSettingsDialog(
                     ) {
                         listOf(
                             "70% Прозоре" to 70,
-                            "85% Матове" to 85,
-                            "100% Суцільне" to 100
+                            "85% Матове" to 85
                         ).forEach { (label, opacityVal) ->
                             val isSelected = widgetOpacity == opacityVal
                             FilterChip(
