@@ -58,7 +58,7 @@ data class SchedulePair(
 
     fun calculateStatus(isToday: Boolean): PairStatus {
         if (!isToday) return PairStatus.UPCOMING
-        val parts = timeRange.split("-")
+            val parts = timeRange.split(Regex("\\s*[-–—]\\s*"))
         if (parts.size != 2) return PairStatus.UPCOMING
         
         try {

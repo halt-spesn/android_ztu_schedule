@@ -72,7 +72,7 @@ fun CurrentPairBanner(
                     val endMin = end.hour * 60 + end.minute
                     val nowMin = now.hour * 60 + now.minute
                     if (endMin > startMin) {
-                        ((nowMin - startMin).toFloat() / (endMin - startMin)).coerceIn(0.15f, 0.95f)
+                        ((nowMin - startMin).toFloat() / (endMin - startMin)).coerceIn(0f, 1f)
                     } else 0.5f
                 } else 0.5f
             } catch (_: Exception) {
@@ -227,7 +227,7 @@ fun CurrentPairBanner(
                             .weight(1f)
                             .height(6.dp)
                             .clip(RoundedCornerShape(50))
-                            .background(SleekBorderPurple)
+                            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.28f))
                     ) {
                         if (isCurrent) {
                             Box(

@@ -182,6 +182,13 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 Log.e("ScheduleWidget", "Could not load today pairs", e)
                 emptyList()
             }
+            val orderedPairs = pairs.sortedWith(compareBy<SchedulePair> {
+                when (it.calculateStatus(true)) {
+                    PairStatus.CURRENT -> 0
+                    PairStatus.UPCOMING -> 1
+                    PairStatus.PAST -> 2
+                }
+            }.thenBy { it.pairNumber })
 
             val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
             val updateTime = timeFormat.format(System.currentTimeMillis())
@@ -205,15 +212,15 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_empty_view, View.GONE)
 
                 // Pair 1
-                val p1 = pairs.getOrNull(0)
+                val p1 = orderedPairs.getOrNull(0)
                 bindPairRow(views, R.id.widget_pair_1, R.id.widget_pair_1_num, R.id.widget_pair_1_subject, R.id.widget_pair_1_meta, p1)
 
                 // Pair 2
-                val p2 = pairs.getOrNull(1)
+                val p2 = orderedPairs.getOrNull(1)
                 bindPairRow(views, R.id.widget_pair_2, R.id.widget_pair_2_num, R.id.widget_pair_2_subject, R.id.widget_pair_2_meta, p2)
 
                 // Pair 3
-                val p3 = pairs.getOrNull(2)
+                val p3 = orderedPairs.getOrNull(2)
                 bindPairRow(views, R.id.widget_pair_3, R.id.widget_pair_3_num, R.id.widget_pair_3_subject, R.id.widget_pair_3_meta, p3)
 
                 // More pairs indicator
