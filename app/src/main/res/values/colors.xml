@@ -23,10 +23,10 @@
     <color name="widget_accent">#6750A4</color>
     <color name="widget_refresh_tint">#6750A4</color>
 
-    <!-- Widget Glass Colors -->
-    <color name="widget_glass_bg">#CCFDF8FD</color>
-    <color name="widget_glass_bg_translucent">#B318110F</color>
-    <color name="widget_glass_stroke">#2EFFFFFF</color>
-    <color name="widget_glass_card_bg">#80FFFFFF</color>
-    <color name="widget_glass_card_stroke">#1AFFFFFF</color>
+    <!-- Widget Glass Colors (Light) -->
+    <color name="widget_glass_bg">#DDFDF8FD</color>
+    <color name="widget_glass_bg_translucent">#B3FDF8FD</color>
+    <color name="widget_glass_stroke">#2479747E</color>
+    <color name="widget_glass_card_bg">#B3FFFFFF</color>
+    <color name="widget_glass_card_stroke">#1479747E</color>
 </resources>

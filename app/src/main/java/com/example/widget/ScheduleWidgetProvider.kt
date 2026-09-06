@@ -149,7 +149,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             views.setImageViewResource(R.id.widget_btn_refresh, R.drawable.ic_refresh)
 
             // Dynamic Styling (Backgrounds, Card outlines, Accent tints)
-            applyWidgetStyling(context, views, widgetStyle, widgetOpacity, repo.isDynamicColorEnabled())
+            applyWidgetStyling(context, views, widgetStyle, widgetOpacity, repo.isDynamicColorEnabled(), repo.isOledModeEnabled())
 
             // Click on widget opens MainActivity
             val appIntent = Intent(context, MainActivity::class.java).apply {
@@ -243,70 +243,32 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         context: Context,
         views: RemoteViews,
         style: String,
-        opacity: Int
-        , dynamicColorEnabled: Boolean
+        opacity: Int,
+        dynamicColorEnabled: Boolean,
+        oledModeEnabled: Boolean
     ) {
         val isDarkTheme = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val isMonetSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        val isMonetActive = dynamicColorEnabled && isMonetSupported
+        val isOledActive = isDarkTheme && oledModeEnabled
+        val isGlass = style == ScheduleRepository.WIDGET_STYLE_GLASS
 
-        val bgRes = when (style) {
-            ScheduleRepository.WIDGET_STYLE_GLASS -> {
+        val bgRes = when {
+            isGlass -> {
                 if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
             }
-            ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_bg_dark
-            ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_bg_light
-            ScheduleRepository.WIDGET_STYLE_MONET -> {
-                if (isMonetSupported) {
-                    if (isDarkTheme) R.drawable.ic_widget_bg_monet_dark else R.drawable.ic_widget_bg_monet_light
-                } else {
-                    R.drawable.ic_widget_bg_monet
-                }
-            }
-            ScheduleRepository.WIDGET_STYLE_SYSTEM -> {
-                if (isMonetSupported) {
-                    if (isDarkTheme) R.drawable.ic_widget_bg_monet_dark else R.drawable.ic_widget_bg_monet_light
-                } else if (isDarkTheme) {
-                    if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
-                } else {
-                    R.drawable.ic_widget_bg
-                }
-            }
-            else -> {
-                if (isMonetSupported) {
-                    if (isDarkTheme) R.drawable.ic_widget_bg_monet_dark else R.drawable.ic_widget_bg_monet_light
-                } else {
-                    R.drawable.ic_widget_bg_monet
-                }
-            }
+            isOledActive -> R.drawable.ic_widget_bg_dark
+            isMonetActive -> R.drawable.ic_widget_bg_monet
+            isDarkTheme -> R.drawable.ic_widget_bg_dark
+            else -> R.drawable.ic_widget_bg_light
         }
 
-        val cardBgRes = when (style) {
-            ScheduleRepository.WIDGET_STYLE_GLASS -> R.drawable.ic_widget_card_bg_glass
-            ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_card_bg_dark
-            ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_card_bg_light
-            ScheduleRepository.WIDGET_STYLE_MONET -> {
-                if (isMonetSupported) {
-                    if (isDarkTheme) R.drawable.ic_widget_card_bg_monet_dark else R.drawable.ic_widget_card_bg_monet_light
-                } else {
-                    R.drawable.ic_widget_card_bg_monet
-                }
-            }
-            ScheduleRepository.WIDGET_STYLE_SYSTEM -> {
-                if (isMonetSupported) {
-                    if (isDarkTheme) R.drawable.ic_widget_card_bg_monet_dark else R.drawable.ic_widget_card_bg_monet_light
-                } else if (isDarkTheme) {
-                    R.drawable.ic_widget_card_bg_glass
-                } else {
-                    R.drawable.ic_widget_card_bg
-                }
-            }
-            else -> {
-                if (isMonetSupported) {
-                    if (isDarkTheme) R.drawable.ic_widget_card_bg_monet_dark else R.drawable.ic_widget_card_bg_monet_light
-                } else {
-                    R.drawable.ic_widget_card_bg_monet
-                }
-            }
+        val cardBgRes = when {
+            isGlass -> R.drawable.ic_widget_card_bg_glass
+            isOledActive -> R.drawable.ic_widget_card_bg_dark
+            isMonetActive -> R.drawable.ic_widget_card_bg_monet
+            isDarkTheme -> R.drawable.ic_widget_card_bg_dark
+            else -> R.drawable.ic_widget_card_bg_light
         }
 
         views.setInt(R.id.widget_root, "setBackgroundResource", bgRes)
@@ -314,94 +276,74 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         views.setInt(R.id.widget_pair_2, "setBackgroundResource", cardBgRes)
         views.setInt(R.id.widget_pair_3, "setBackgroundResource", cardBgRes)
 
-        // Accent and text color calculation based on theme and Monet
-        val isMonetActive = dynamicColorEnabled && (style == ScheduleRepository.WIDGET_STYLE_MONET ||
-                             style == ScheduleRepository.WIDGET_STYLE_SYSTEM || 
-                             style == ScheduleRepository.WIDGET_STYLE_GLASS) && isMonetSupported
-
-        val accentColor = if (isMonetActive) {
-            try {
+        when {
+            !isMonetActive -> {
+                // When Monet dynamic color is disabled, enforce static palette (matches in-app preview)
                 if (isDarkTheme) {
-                    context.getColor(android.R.color.system_accent1_200)
+                    applyFixedWidgetColors(
+                        views = views,
+                        titleColor = Color.parseColor("#FFF3EF"),
+                        secondaryColor = Color.parseColor("#D6C2BC"),
+                        footerColor = Color.parseColor("#9C8B85"),
+                        dividerColor = Color.parseColor("#1AFFFFFF"),
+                        accentColor = if (isOledActive) Color.parseColor("#FF8A65") else Color.parseColor("#D0BCFF"),
+                        chipBg = if (isOledActive) Color.parseColor("#FF8A65") else Color.parseColor("#6750A4"),
+                        chipTextColor = if (isOledActive) Color.parseColor("#1C1210") else Color.WHITE
+                    )
                 } else {
-                    context.getColor(android.R.color.system_accent1_600)
+                    applyFixedWidgetColors(
+                        views = views,
+                        titleColor = Color.parseColor("#1D1B20"),
+                        secondaryColor = Color.parseColor("#49454F"),
+                        footerColor = Color.parseColor("#938F99"),
+                        dividerColor = Color.parseColor("#1F79747E"),
+                        accentColor = Color.parseColor("#6750A4"),
+                        chipBg = Color.parseColor("#6750A4"),
+                        chipTextColor = Color.WHITE
+                    )
                 }
-            } catch (e: Exception) {
-                Color.parseColor("#FF8A65")
             }
-        } else {
-            Color.parseColor("#6750A4")
+            else -> {
+                // Adaptive Monet mode with DayNight theme enabled.
+                // XML layout references (@color/widget_text_title, @color/widget_bg, etc.)
+                // dynamically adapt to system Light/Dark mode changes via DayNight theme.
+                views.setInt(R.id.widget_btn_refresh, "setColorFilter", 0)
+                views.setInt(R.id.widget_app_icon, "setColorFilter", 0)
+            }
         }
+    }
 
-        // Explicitly restore static palette colors when Monet is disabled.
-        if (!isMonetActive) {
-            val light = !isDarkTheme || style == ScheduleRepository.WIDGET_STYLE_LIGHT
-            views.setTextColor(R.id.widget_title, if (light) Color.parseColor("#1D1B20") else Color.WHITE)
-            views.setTextColor(R.id.widget_day_info, if (light) Color.parseColor("#49454F") else Color.LTGRAY)
-        }
+    private fun applyFixedWidgetColors(
+        views: RemoteViews,
+        titleColor: Int,
+        secondaryColor: Int,
+        footerColor: Int,
+        dividerColor: Int,
+        accentColor: Int,
+        chipBg: Int,
+        chipTextColor: Int
+    ) {
+        views.setTextColor(R.id.widget_title, titleColor)
+        views.setTextColor(R.id.widget_day_info, secondaryColor)
+        views.setTextColor(R.id.widget_empty_title, titleColor)
+        views.setTextColor(R.id.widget_empty_subtitle, secondaryColor)
+        views.setTextColor(R.id.widget_footer, footerColor)
+        views.setInt(R.id.widget_divider, "setBackgroundColor", dividerColor)
 
-        // Apply dynamic accent color to header icon, refresh button, and more pairs text
+        views.setTextColor(R.id.widget_pair_1_subject, titleColor)
+        views.setTextColor(R.id.widget_pair_1_meta, secondaryColor)
+        views.setTextColor(R.id.widget_pair_2_subject, titleColor)
+        views.setTextColor(R.id.widget_pair_2_meta, secondaryColor)
+        views.setTextColor(R.id.widget_pair_3_subject, titleColor)
+        views.setTextColor(R.id.widget_pair_3_meta, secondaryColor)
+
         views.setInt(R.id.widget_btn_refresh, "setColorFilter", accentColor)
         views.setInt(R.id.widget_app_icon, "setColorFilter", accentColor)
         views.setTextColor(R.id.widget_more_pairs, accentColor)
 
-        // Apply text colors based on style and Monet
-        if (isMonetActive) {
-            try {
-                val titleColor = if (isDarkTheme) {
-                    context.getColor(android.R.color.system_neutral1_100)
-                } else {
-                    context.getColor(android.R.color.system_neutral1_900)
-                }
-                val secondaryColor = if (isDarkTheme) {
-                    context.getColor(android.R.color.system_neutral2_200)
-                } else {
-                    context.getColor(android.R.color.system_neutral2_700)
-                }
-                val footerColor = if (isDarkTheme) {
-                    context.getColor(android.R.color.system_neutral2_400)
-                } else {
-                    context.getColor(android.R.color.system_neutral2_500)
-                }
-
-                val dividerColor = if (isDarkTheme) {
-                    context.getColor(android.R.color.system_neutral2_700)
-                } else {
-                    context.getColor(android.R.color.system_neutral2_200)
-                }
-
-                views.setInt(R.id.widget_divider, "setBackgroundColor", dividerColor)
-                views.setTextColor(R.id.widget_title, titleColor)
-                views.setTextColor(R.id.widget_day_info, secondaryColor)
-                views.setTextColor(R.id.widget_empty_title, titleColor)
-                views.setTextColor(R.id.widget_empty_subtitle, secondaryColor)
-                views.setTextColor(R.id.widget_footer, footerColor)
-
-                views.setTextColor(R.id.widget_pair_1_subject, titleColor)
-                views.setTextColor(R.id.widget_pair_1_meta, secondaryColor)
-                views.setTextColor(R.id.widget_pair_2_subject, titleColor)
-                views.setTextColor(R.id.widget_pair_2_meta, secondaryColor)
-                views.setTextColor(R.id.widget_pair_3_subject, titleColor)
-                views.setTextColor(R.id.widget_pair_3_meta, secondaryColor)
-
-                // Pair number badge chip colors in Monet mode
-                val chipBg = if (isDarkTheme) {
-                    context.getColor(android.R.color.system_accent1_200)
-                } else {
-                    context.getColor(android.R.color.system_accent1_600)
-                }
-                val chipTextColor = if (isDarkTheme) {
-                    context.getColor(android.R.color.system_accent1_900)
-                } else {
-                    context.getColor(android.R.color.system_accent1_0)
-                }
-                listOf(R.id.widget_pair_1_num, R.id.widget_pair_2_num, R.id.widget_pair_3_num).forEach { numId ->
-                    views.setInt(numId, "setBackgroundColor", chipBg)
-                    views.setTextColor(numId, chipTextColor)
-                }
-            } catch (e: Exception) {
-                Log.e("ScheduleWidget", "Could not apply Monet text colors", e)
-            }
+        listOf(R.id.widget_pair_1_num, R.id.widget_pair_2_num, R.id.widget_pair_3_num).forEach { numId ->
+            views.setInt(numId, "setBackgroundColor", chipBg)
+            views.setTextColor(numId, chipTextColor)
         }
     }
 

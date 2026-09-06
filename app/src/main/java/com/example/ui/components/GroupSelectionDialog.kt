@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -27,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,11 +52,15 @@ fun GroupSelectionDialog(
     currentGroupId: String,
     groups: List<ScheduleGroup>,
     isLoadingGroups: Boolean,
+    isOledMode: Boolean = false,
     onGroupSelected: (groupId: String, groupName: String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var customIdInput by remember { mutableStateOf("") }
+
+    val isDarkTheme = isSystemInDarkTheme()
+    val isOledActive = isOledMode && isDarkTheme
 
     val filteredGroups = remember(searchQuery, groups) {
         if (searchQuery.isBlank()) {
@@ -67,6 +76,8 @@ fun GroupSelectionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
+        containerColor = if (isOledActive) Color.Black else AlertDialogDefaults.containerColor,
+        modifier = if (isOledActive) Modifier.border(1.dp, Color(0xFF222222), RoundedCornerShape(28.dp)) else Modifier,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -112,7 +123,15 @@ fun GroupSelectionDialog(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = if (isOledActive) {
+                        OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF0F0F0F),
+                            unfocusedContainerColor = Color(0xFF0F0F0F)
+                        )
+                    } else {
+                        OutlinedTextFieldDefaults.colors()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -197,7 +216,15 @@ fun GroupSelectionDialog(
                     label = { Text("Вказати інший ID або посилання") },
                     placeholder = { Text("Наприклад: 612 або https://...") },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = if (isOledActive) {
+                        OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF0F0F0F),
+                            unfocusedContainerColor = Color(0xFF0F0F0F)
+                        )
+                    } else {
+                        OutlinedTextFieldDefaults.colors()
+                    }
                 )
             }
         },

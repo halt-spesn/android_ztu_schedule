@@ -34,9 +34,14 @@ private val DarkColorScheme =
     tertiary = SleekTertiaryContainer,
     tertiaryContainer = SleekTertiary,
     onTertiaryContainer = SleekOnTertiaryContainer,
-    background = androidx.compose.ui.graphics.Color.Black,
-    surface = androidx.compose.ui.graphics.Color.Black,
-    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF101010),
+    background = SleekDarkBackground,
+    surface = SleekDarkSurface,
+    surfaceVariant = SleekDarkSurfaceVariant,
+    surfaceContainer = SleekDarkSurface,
+    surfaceContainerHigh = SleekDarkSurfaceVariant,
+    surfaceContainerHighest = SleekDarkSurfaceVariant,
+    surfaceContainerLow = SleekDarkBackground,
+    surfaceContainerLowest = SleekDarkBackground,
     onBackground = SleekDarkTextPrimary,
     onSurface = SleekDarkTextPrimary,
     onSurfaceVariant = SleekDarkTextSecondary,
@@ -82,7 +87,24 @@ fun MyApplicationTheme(
 
       darkTheme -> DarkColorScheme
       else -> LightColorScheme
-    }.let { scheme -> if (oledMode) scheme.copy(background = Color.Black, surface = Color.Black, surfaceVariant = Color(0xFF101010)) else scheme }
+    }.let { scheme ->
+      if (darkTheme && oledMode) {
+        scheme.copy(
+          background = Color.Black,
+          surface = Color.Black,
+          surfaceVariant = Color(0xFF101010),
+          surfaceContainer = Color.Black,
+          surfaceContainerHigh = Color(0xFF0C0C0C),
+          surfaceContainerHighest = Color(0xFF141414),
+          surfaceContainerLow = Color.Black,
+          surfaceContainerLowest = Color.Black,
+          surfaceDim = Color.Black,
+          surfaceBright = Color(0xFF1A1A1A)
+        )
+      } else {
+        scheme
+      }
+    }
 
   MaterialTheme(
     colorScheme = colorScheme,

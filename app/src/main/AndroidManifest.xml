@@ -33,7 +33,7 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.ACTION_WIDGET_REFRESH" />
-                <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+                <action android:name="com.example.ACTION_UPDATE_FROM_APP" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

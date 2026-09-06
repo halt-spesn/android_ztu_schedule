@@ -15,6 +15,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +49,7 @@ import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -579,6 +581,7 @@ fun ScheduleScreen(
             currentGroupId = uiState.displayGroupId,
             groups = uiState.cachedGroups,
             isLoadingGroups = uiState.isLoadingGroups,
+            isOledMode = uiState.isOledMode,
             onGroupSelected = { id, name ->
                 viewModel.selectGroup(id, name)
             },
@@ -588,7 +591,10 @@ fun ScheduleScreen(
 
     // Widget Guide Dialog
     if (uiState.isWidgetGuideVisible) {
-        WidgetGuideDialog(onDismiss = { viewModel.showWidgetGuide(false) })
+        WidgetGuideDialog(
+            isOledMode = uiState.isOledMode,
+            onDismiss = { viewModel.showWidgetGuide(false) }
+        )
     }
 
     // Theme Settings Dialog (Monet / Material You & Widget Styling)
@@ -666,10 +672,17 @@ fun EmptyDayState(
 }
 
 @Composable
-fun WidgetGuideDialog(onDismiss: () -> Unit) {
+fun WidgetGuideDialog(
+    isOledMode: Boolean = false,
+    onDismiss: () -> Unit
+) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val isOledActive = isOledMode && isDarkTheme
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
+        containerColor = if (isOledActive) Color.Black else AlertDialogDefaults.containerColor,
+        modifier = if (isOledActive) Modifier.border(1.dp, Color(0xFF222222), RoundedCornerShape(28.dp)) else Modifier,
         icon = {
             Icon(
                 imageVector = Icons.Default.Widgets,
@@ -825,10 +838,14 @@ fun ThemeSettingsDialog(
     onDismiss: () -> Unit
 ) {
     val isMonetSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val isDarkTheme = isSystemInDarkTheme()
+    val isOledActive = isOledMode && isDarkTheme
     val scrollState = rememberScrollState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = if (isOledActive) Color.Black else AlertDialogDefaults.containerColor,
+        modifier = if (isOledActive) Modifier.border(1.dp, Color(0xFF222222), RoundedCornerShape(26.dp)) else Modifier,
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -873,8 +890,8 @@ fun ThemeSettingsDialog(
                 // Section 1: Monet Engine Switch
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                    color = if (isOledActive) Color(0xFF0F0F0F) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    border = BorderStroke(1.dp, if (isOledActive) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -897,7 +914,7 @@ fun ThemeSettingsDialog(
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = if (isMonetSupported) {
-                                    "Адаптує палітру під шпалери вашого пристрою (Material You / M3)"
+                                    "Адаптує палітру додатку та віджета під шпалери пристрою"
                                 } else {
                                     "Потрібен Android 12+ для динамічних кольорів Monet"
                                 },
@@ -914,9 +931,48 @@ fun ThemeSettingsDialog(
                         )
                     }
                 }
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("OLED чорний режим", style = MaterialTheme.typography.titleSmall)
-                    Switch(checked = isOledMode, onCheckedChange = onToggleOledMode)
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = if (isOledActive) Color(0xFF0F0F0F) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    border = BorderStroke(1.dp, if (isOledActive) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 10.dp)
+                        ) {
+                            Text(
+                                text = "OLED чорний режим",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isDarkTheme) {
+                                    "Глибокий чорний колір для економії заряду на OLED/AMOLED екранах"
+                                } else {
+                                    "Доступно лише коли увімкнено темну тему Android"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Switch(
+                            checked = isOledMode && isDarkTheme,
+                            onCheckedChange = { onToggleOledMode(it) },
+                            enabled = isDarkTheme,
+                            modifier = Modifier.testTag("oled_toggle_switch")
+                        )
+                    }
                 }
 
                 // Section 2: System palette swatches
@@ -972,35 +1028,42 @@ fun ThemeSettingsDialog(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf(
-                        "✨ Скло" to ScheduleRepository.WIDGET_STYLE_GLASS,
-                        "🎨 Monet" to ScheduleRepository.WIDGET_STYLE_MONET,
-                        "🌑 Темний" to ScheduleRepository.WIDGET_STYLE_DARK
+                        "✨ Матове скло" to ScheduleRepository.WIDGET_STYLE_GLASS,
+                        "📱 Суцільний" to ScheduleRepository.WIDGET_STYLE_SYSTEM
                     ).forEach { (label, styleKey) ->
-                        val isSelected = widgetStyle == styleKey
+                        val isSelected = if (styleKey == ScheduleRepository.WIDGET_STYLE_GLASS) {
+                            widgetStyle == ScheduleRepository.WIDGET_STYLE_GLASS
+                        } else {
+                            widgetStyle != ScheduleRepository.WIDGET_STYLE_GLASS
+                        }
                         FilterChip(
                             selected = isSelected,
                             onClick = { onSelectWidgetStyle(styleKey) },
                             label = {
                                 Text(
                                     text = label,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                             ),
-                            modifier = Modifier.testTag("widget_style_$styleKey")
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("widget_style_$styleKey")
                         )
                     }
                 }
 
                 // Section 4: Widget Opacity
-                if (widgetStyle == ScheduleRepository.WIDGET_STYLE_GLASS || widgetStyle == ScheduleRepository.WIDGET_STYLE_SYSTEM) {
+                if (widgetStyle == ScheduleRepository.WIDGET_STYLE_GLASS) {
                     Text(
                         text = "ПРОЗОРІСТЬ МАТОВОГО СКЛА",
                         style = MaterialTheme.typography.labelSmall,
@@ -1011,7 +1074,7 @@ fun ThemeSettingsDialog(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf(
                             "70% Прозоре" to 70,
@@ -1024,15 +1087,19 @@ fun ThemeSettingsDialog(
                                 label = {
                                     Text(
                                         text = label,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                                     selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
                                 ),
-                                modifier = Modifier.testTag("widget_opacity_$opacityVal")
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("widget_opacity_$opacityVal")
                             )
                         }
                     }
@@ -1047,58 +1114,66 @@ fun ThemeSettingsDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // Simulated Wallpaper + Frosted Glass / Monet Widget
-                val isMonetApplicable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                val isMonetActive = widgetStyle == ScheduleRepository.WIDGET_STYLE_MONET || 
-                                    ((widgetStyle == ScheduleRepository.WIDGET_STYLE_GLASS || widgetStyle == ScheduleRepository.WIDGET_STYLE_SYSTEM) && isMonetApplicable)
+                val isMonetActive = isDynamicColor && isMonetSupported
+                val isGlass = widgetStyle == ScheduleRepository.WIDGET_STYLE_GLASS
 
                 val previewBg = when {
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surface
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFFDF8FD)
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF14100F)
-                    isMonetActive -> {
-                        // Frosted glass tinted with dynamic surface neutral
-                        MaterialTheme.colorScheme.surface.copy(alpha = if (widgetOpacity <= 75) 0.72f else 0.85f)
+                    isGlass -> {
+                        val alpha = if (widgetOpacity <= 75) 0.70f else 0.85f
+                        if (isDarkTheme) {
+                            if (isOledActive) Color.Black.copy(alpha = alpha)
+                            else if (isMonetActive) MaterialTheme.colorScheme.surface.copy(alpha = alpha)
+                            else Color(0xFF141218).copy(alpha = alpha)
+                        } else {
+                            if (isMonetActive) MaterialTheme.colorScheme.surface.copy(alpha = alpha)
+                            else Color(0xFFFDF8FD).copy(alpha = alpha)
+                        }
                     }
-                    else -> Color(0xFF1E1715).copy(alpha = if (widgetOpacity <= 75) 0.72f else 0.88f)
+                    isOledActive -> Color.Black
+                    isDarkTheme -> if (isMonetActive) MaterialTheme.colorScheme.surface else Color(0xFF141218)
+                    else -> if (isMonetActive) MaterialTheme.colorScheme.surface else Color(0xFFFDF8FD)
                 }
+
                 val previewCardBg = when {
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surfaceVariant
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFECE5ED)
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF2B2220)
-                    isMonetActive -> {
-                        // Subtle frosted acrylic card tinted with Monet surface variant
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    isGlass -> {
+                        if (isDarkTheme) Color(0xFFFFFFFF).copy(alpha = 0.14f)
+                        else Color(0xFFFFFFFF).copy(alpha = 0.70f)
                     }
-                    else -> Color(0xFFFFFFFF).copy(alpha = 0.14f)
+                    isOledActive -> Color(0xFF101010)
+                    isDarkTheme -> if (isMonetActive) MaterialTheme.colorScheme.surfaceVariant else Color(0xFF2B2830)
+                    else -> if (isMonetActive) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF2ECE8)
                 }
+
                 val previewTitleColor = when {
-                    isMonetActive -> MaterialTheme.colorScheme.onSurface
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF1D1B20)
-                    else -> Color(0xFFF6EEF5)
+                    isDarkTheme -> if (isMonetActive) MaterialTheme.colorScheme.onSurface else Color(0xFFFFF3EF)
+                    else -> if (isMonetActive) MaterialTheme.colorScheme.onSurface else Color(0xFF1D1B20)
                 }
+
                 val previewSubtitleColor = when {
-                    isMonetActive -> MaterialTheme.colorScheme.onSurfaceVariant
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF49454F)
-                    else -> Color(0xFFD6C8CE)
+                    isDarkTheme -> if (isMonetActive) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFFD6C2BC)
+                    else -> if (isMonetActive) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF49454F)
                 }
+
                 val previewAccent = when {
-                    isMonetActive -> MaterialTheme.colorScheme.primary
-                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF6750A4)
-                    else -> Color(0xFFFF8A65)
+                    isDarkTheme -> if (isMonetActive) MaterialTheme.colorScheme.primary else if (isOledActive) Color(0xFFFF8A65) else Color(0xFFD0BCFF)
+                    else -> if (isMonetActive) MaterialTheme.colorScheme.primary else Color(0xFF6750A4)
+                }
+
+                val previewChipTextColor = when {
+                    isDarkTheme -> if (isMonetActive) MaterialTheme.colorScheme.onPrimary else if (isOledActive) Color(0xFF1C1210) else Color.White
+                    else -> if (isMonetActive) MaterialTheme.colorScheme.onPrimary else Color.White
                 }
 
                 val previewRootBorder = when {
-                    isMonetActive -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                    else -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.22f))
+                    isOledActive -> BorderStroke(1.dp, Color(0xFF222222))
+                    isDarkTheme -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.18f))
+                    else -> BorderStroke(1.dp, Color(0xFF79747E).copy(alpha = 0.20f))
                 }
+
                 val previewBorder = when {
-                    isMonetActive -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    else -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.12f))
-                }
-                val previewChipTextColor = when {
-                    isMonetActive -> MaterialTheme.colorScheme.onPrimary
-                    else -> Color.White
+                    isOledActive -> BorderStroke(1.dp, Color(0xFF222222))
+                    isDarkTheme -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.12f))
+                    else -> BorderStroke(1.dp, Color(0xFF79747E).copy(alpha = 0.14f))
                 }
 
                 Surface(

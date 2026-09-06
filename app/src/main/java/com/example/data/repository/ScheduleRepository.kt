@@ -62,9 +62,13 @@ class ScheduleRepository(
 
     fun setDynamicColorEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_DYNAMIC_COLOR, enabled).apply()
+        notifyWidgetUpdate()
     }
     fun isOledModeEnabled() = prefs.getBoolean(KEY_OLED_MODE, false)
-    fun setOledModeEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_OLED_MODE, enabled).apply()
+    fun setOledModeEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_OLED_MODE, enabled).apply()
+        notifyWidgetUpdate()
+    }
 
     fun getWidgetStyle(): String {
         val defaultStyle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
