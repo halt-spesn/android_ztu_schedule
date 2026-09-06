@@ -14,4 +14,11 @@
     <color name="widget_divider">@android:color/system_neutral2_700</color>
     <color name="widget_accent">@android:color/system_accent1_200</color>
     <color name="widget_refresh_tint">@android:color/system_accent1_200</color>
+
+    <!-- Monet-tinted Frosted Glass Colors (Dark) -->
+    <color name="widget_glass_bg">#CC1A1210</color>
+    <color name="widget_glass_bg_translucent">#B318110F</color>
+    <color name="widget_glass_stroke">#2EFFFFFF</color>
+    <color name="widget_glass_card_bg">#24FFFFFF</color>
+    <color name="widget_glass_card_stroke">#1AFFFFFF</color>
 </resources>

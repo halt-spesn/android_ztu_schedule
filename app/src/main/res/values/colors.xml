@@ -22,4 +22,11 @@
     <color name="widget_divider">#1F79747E</color>
     <color name="widget_accent">#6750A4</color>
     <color name="widget_refresh_tint">#6750A4</color>
+
+    <!-- Widget Glass Colors -->
+    <color name="widget_glass_bg">#CC1A1210</color>
+    <color name="widget_glass_bg_translucent">#B318110F</color>
+    <color name="widget_glass_stroke">#2EFFFFFF</color>
+    <color name="widget_glass_card_bg">#24FFFFFF</color>
+    <color name="widget_glass_card_stroke">#1AFFFFFF</color>
 </resources>

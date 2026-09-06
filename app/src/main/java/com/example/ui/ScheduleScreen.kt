@@ -1043,44 +1043,56 @@ fun ThemeSettingsDialog(
                 )
 
                 // Simulated Wallpaper + Frosted Glass / Monet Widget
-                val previewBg = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surface
-                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFFDF8FD)
-                    ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF14100F)
+                val isMonetApplicable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                val isMonetActive = widgetStyle == ScheduleRepository.WIDGET_STYLE_MONET || 
+                                    ((widgetStyle == ScheduleRepository.WIDGET_STYLE_GLASS || widgetStyle == ScheduleRepository.WIDGET_STYLE_SYSTEM) && isMonetApplicable)
+
+                val previewBg = when {
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surface
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFFDF8FD)
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF14100F)
+                    isMonetActive -> {
+                        // Frosted glass tinted with dynamic surface neutral
+                        MaterialTheme.colorScheme.surface.copy(alpha = if (widgetOpacity <= 75) 0.72f else 0.85f)
+                    }
                     else -> Color(0xFF1E1715).copy(alpha = if (widgetOpacity <= 75) 0.72f else 0.88f)
                 }
-                val previewCardBg = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surfaceVariant
-                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFECE5ED)
-                    ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF2B2220)
+                val previewCardBg = when {
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.surfaceVariant
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFFECE5ED)
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_DARK -> Color(0xFF2B2220)
+                    isMonetActive -> {
+                        // Subtle frosted acrylic card tinted with Monet surface variant
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    }
                     else -> Color(0xFFFFFFFF).copy(alpha = 0.14f)
                 }
-                val previewTitleColor = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.onSurface
-                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF1D1B20)
+                val previewTitleColor = when {
+                    isMonetActive -> MaterialTheme.colorScheme.onSurface
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF1D1B20)
                     else -> Color(0xFFF6EEF5)
                 }
-                val previewSubtitleColor = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.onSurfaceVariant
-                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF49454F)
+                val previewSubtitleColor = when {
+                    isMonetActive -> MaterialTheme.colorScheme.onSurfaceVariant
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF49454F)
                     else -> Color(0xFFD6C8CE)
                 }
-                val previewAccent = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.primary
-                    ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF6750A4)
+                val previewAccent = when {
+                    isMonetActive -> MaterialTheme.colorScheme.primary
+                    widgetStyle == ScheduleRepository.WIDGET_STYLE_LIGHT -> Color(0xFF6750A4)
                     else -> Color(0xFFFF8A65)
                 }
 
-                val previewRootBorder = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                val previewRootBorder = when {
+                    isMonetActive -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     else -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.22f))
                 }
-                val previewBorder = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                val previewBorder = when {
+                    isMonetActive -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     else -> BorderStroke(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.12f))
                 }
-                val previewChipTextColor = when (widgetStyle) {
-                    ScheduleRepository.WIDGET_STYLE_MONET -> MaterialTheme.colorScheme.onPrimary
+                val previewChipTextColor = when {
+                    isMonetActive -> MaterialTheme.colorScheme.onPrimary
                     else -> Color.White
                 }
 
