@@ -30,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,10 +68,6 @@ fun PairCard(
         LessonType.OTHER -> MaterialTheme.colorScheme.primary
     }
 
-    val startTime = remember(pair.timeRange) {
-        pair.timeRange.split("-").firstOrNull()?.trim() ?: pair.timeRange
-    }
-
     val cardBorder = when {
         isCurrent -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
         isPast -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
@@ -106,14 +101,14 @@ fun PairCard(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Column: Time & Pair Number (e.g. 12:20 / PAIR 3)
+            // Left Column: Full time range & pair number
             Column(
-                modifier = Modifier.width(52.dp),
+                modifier = Modifier.width(76.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = startTime,
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = pair.timeRange.replace("-", "–"),
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isCurrent) MaterialTheme.colorScheme.primary
                     else if (isPast) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -246,4 +241,3 @@ fun PairCard(
         }
     }
 }
-

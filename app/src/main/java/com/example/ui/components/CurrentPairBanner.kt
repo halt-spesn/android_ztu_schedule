@@ -24,7 +24,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +40,7 @@ import com.example.data.model.SchedulePair
 import com.example.ui.theme.SleekBorderPurple
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
 
 @Composable
 fun CurrentPairBanner(
@@ -43,8 +48,16 @@ fun CurrentPairBanner(
     isCurrent: Boolean,
     modifier: Modifier = Modifier
 ) {
+    var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(pair.timeRange, isCurrent) {
+        while (isCurrent) {
+            nowMillis = System.currentTimeMillis()
+            delay(30_000)
+        }
+    }
+
     // Calculate progress fraction for the ongoing pair
-    val progressFraction = remember(pair.timeRange, isCurrent) {
+    val progressFraction = remember(pair.timeRange, isCurrent, nowMillis) {
         if (!isCurrent) 0f
         else {
             try {
@@ -53,7 +66,8 @@ fun CurrentPairBanner(
                     val fmt = DateTimeFormatter.ofPattern("H:mm")
                     val start = LocalTime.parse(parts[0].trim(), fmt)
                     val end = LocalTime.parse(parts[1].trim(), fmt)
-                    val now = LocalTime.now()
+                    val now = java.time.Instant.ofEpochMilli(nowMillis)
+                        .atZone(java.time.ZoneId.systemDefault()).toLocalTime()
                     val startMin = start.hour * 60 + start.minute
                     val endMin = end.hour * 60 + end.minute
                     val nowMin = now.hour * 60 + now.minute
@@ -68,7 +82,7 @@ fun CurrentPairBanner(
     }
 
     // Remaining minutes calculation
-    val remainingText = remember(pair.timeRange, isCurrent) {
+    val remainingText = remember(pair.timeRange, isCurrent, nowMillis) {
         if (!isCurrent) "СЬОГОДНІ"
         else {
             try {
@@ -76,7 +90,8 @@ fun CurrentPairBanner(
                 if (parts.size == 2) {
                     val fmt = DateTimeFormatter.ofPattern("H:mm")
                     val end = LocalTime.parse(parts[1].trim(), fmt)
-                    val now = LocalTime.now()
+                    val now = java.time.Instant.ofEpochMilli(nowMillis)
+                        .atZone(java.time.ZoneId.systemDefault()).toLocalTime()
                     val endMin = end.hour * 60 + end.minute
                     val nowMin = now.hour * 60 + now.minute
                     val diff = endMin - nowMin
@@ -236,4 +251,3 @@ fun CurrentPairBanner(
         }
     }
 }
-
