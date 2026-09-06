@@ -75,7 +75,6 @@ fun MyApplicationTheme(
 ) {
   val colorScheme =
     when {
-      oledMode -> DarkColorScheme.copy(background = Color.Black, surface = Color.Black, surfaceVariant = Color(0xFF101010))
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
         val context = LocalContext.current
         if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -83,7 +82,7 @@ fun MyApplicationTheme(
 
       darkTheme -> DarkColorScheme
       else -> LightColorScheme
-    }
+    }.let { scheme -> if (oledMode) scheme.copy(background = Color.Black, surface = Color.Black, surfaceVariant = Color(0xFF101010)) else scheme }
 
   MaterialTheme(
     colorScheme = colorScheme,

@@ -82,6 +82,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             }
             ACTION_UPDATE_FROM_APP,
             ACTION_WIDGET_TICK,
+            Intent.ACTION_CONFIGURATION_CHANGED,
             AppWidgetManager.ACTION_APPWIDGET_UPDATE -> {
                 val pendingResult = goAsync()
                 scope.launch {
@@ -250,8 +251,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
 
         val bgRes = when (style) {
             ScheduleRepository.WIDGET_STYLE_GLASS -> {
-                if (!isDarkTheme) R.drawable.ic_widget_bg_light
-                else if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
+                if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
             }
             ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_bg_dark
             ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_bg_light
@@ -281,7 +281,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         }
 
         val cardBgRes = when (style) {
-            ScheduleRepository.WIDGET_STYLE_GLASS -> if (isDarkTheme) R.drawable.ic_widget_card_bg_glass else R.drawable.ic_widget_card_bg_light
+            ScheduleRepository.WIDGET_STYLE_GLASS -> R.drawable.ic_widget_card_bg_glass
             ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_card_bg_dark
             ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_card_bg_light
             ScheduleRepository.WIDGET_STYLE_MONET -> {
@@ -329,11 +329,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             } catch (e: Exception) {
                 Color.parseColor("#FF8A65")
             }
-        } else if (style == ScheduleRepository.WIDGET_STYLE_LIGHT) {
-            Color.parseColor("#6750A4")
         } else {
-            // Warm amber accent for dark/glass theme
-            Color.parseColor("#FF8A65")
+            Color.parseColor("#6750A4")
         }
 
         // Explicitly restore static palette colors when Monet is disabled.
