@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-            MyApplicationTheme(dynamicColor = uiState.isDynamicColor) {
+            MyApplicationTheme(dynamicColor = uiState.isDynamicColor, oledMode = uiState.isOledMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -35,4 +35,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

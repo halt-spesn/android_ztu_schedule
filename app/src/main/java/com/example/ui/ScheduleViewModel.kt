@@ -31,6 +31,7 @@ data class ScheduleUiState(
     val selectedGroupId: String = "",
     val selectedGroupName: String = "",
     val isDynamicColor: Boolean = true,
+    val isOledMode: Boolean = false,
     val isThemeDialogVisible: Boolean = false,
     val widgetStyle: String = ScheduleRepository.WIDGET_STYLE_MONET,
     val widgetOpacity: Int = 85,
@@ -124,6 +125,7 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
             selectedGroupId = repository.getSelectedGroupId(),
             selectedGroupName = repository.getSelectedGroupName(),
             isDynamicColor = repository.isDynamicColorEnabled(),
+            isOledMode = repository.isOledModeEnabled(),
             widgetStyle = repository.getWidgetStyle(),
             widgetOpacity = repository.getWidgetOpacity(),
             subgroupFilter = repository.getSubgroupFilter(),
@@ -265,6 +267,10 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     fun toggleDynamicColor(enabled: Boolean) {
         repository.setDynamicColorEnabled(enabled)
         _uiState.update { it.copy(isDynamicColor = enabled) }
+    }
+    fun toggleOledMode(enabled: Boolean) {
+        repository.setOledModeEnabled(enabled)
+        _uiState.update { it.copy(isOledMode = enabled) }
     }
 
     fun setWidgetStyle(style: String) {

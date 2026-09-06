@@ -148,7 +148,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             views.setImageViewResource(R.id.widget_btn_refresh, R.drawable.ic_refresh)
 
             // Dynamic Styling (Backgrounds, Card outlines, Accent tints)
-            applyWidgetStyling(context, views, widgetStyle, widgetOpacity)
+            applyWidgetStyling(context, views, widgetStyle, widgetOpacity, repo.isDynamicColorEnabled())
 
             // Click on widget opens MainActivity
             val appIntent = Intent(context, MainActivity::class.java).apply {
@@ -243,13 +243,15 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         views: RemoteViews,
         style: String,
         opacity: Int
+        , dynamicColorEnabled: Boolean
     ) {
         val isDarkTheme = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val isMonetSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
         val bgRes = when (style) {
             ScheduleRepository.WIDGET_STYLE_GLASS -> {
-                if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
+                if (!isDarkTheme) R.drawable.ic_widget_bg_light
+                else if (opacity <= 75) R.drawable.ic_widget_bg_translucent_70 else R.drawable.ic_widget_bg_glass
             }
             ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_bg_dark
             ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_bg_light
@@ -279,7 +281,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         }
 
         val cardBgRes = when (style) {
-            ScheduleRepository.WIDGET_STYLE_GLASS -> R.drawable.ic_widget_card_bg_glass
+            ScheduleRepository.WIDGET_STYLE_GLASS -> if (isDarkTheme) R.drawable.ic_widget_card_bg_glass else R.drawable.ic_widget_card_bg_light
             ScheduleRepository.WIDGET_STYLE_DARK -> R.drawable.ic_widget_card_bg_dark
             ScheduleRepository.WIDGET_STYLE_LIGHT -> R.drawable.ic_widget_card_bg_light
             ScheduleRepository.WIDGET_STYLE_MONET -> {
@@ -313,7 +315,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         views.setInt(R.id.widget_pair_3, "setBackgroundResource", cardBgRes)
 
         // Accent and text color calculation based on theme and Monet
-        val isMonetActive = (style == ScheduleRepository.WIDGET_STYLE_MONET || 
+        val isMonetActive = dynamicColorEnabled && (style == ScheduleRepository.WIDGET_STYLE_MONET ||
                              style == ScheduleRepository.WIDGET_STYLE_SYSTEM || 
                              style == ScheduleRepository.WIDGET_STYLE_GLASS) && isMonetSupported
 
@@ -336,8 +338,9 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
 
         // Explicitly restore static palette colors when Monet is disabled.
         if (!isMonetActive) {
-            views.setTextColor(R.id.widget_title, if (style == ScheduleRepository.WIDGET_STYLE_LIGHT) Color.parseColor("#1D1B20") else Color.WHITE)
-            views.setTextColor(R.id.widget_day_info, if (style == ScheduleRepository.WIDGET_STYLE_LIGHT) Color.parseColor("#49454F") else Color.LTGRAY)
+            val light = !isDarkTheme || style == ScheduleRepository.WIDGET_STYLE_LIGHT
+            views.setTextColor(R.id.widget_title, if (light) Color.parseColor("#1D1B20") else Color.WHITE)
+            views.setTextColor(R.id.widget_day_info, if (light) Color.parseColor("#49454F") else Color.LTGRAY)
         }
 
         // Apply dynamic accent color to header icon, refresh button, and more pairs text

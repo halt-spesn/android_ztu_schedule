@@ -595,9 +595,11 @@ fun ScheduleScreen(
     if (uiState.isThemeDialogVisible) {
         ThemeSettingsDialog(
             isDynamicColor = uiState.isDynamicColor,
+            isOledMode = uiState.isOledMode,
             widgetStyle = uiState.widgetStyle,
             widgetOpacity = uiState.widgetOpacity,
             onToggleDynamicColor = { viewModel.toggleDynamicColor(it) },
+            onToggleOledMode = { viewModel.toggleOledMode(it) },
             onSelectWidgetStyle = { viewModel.setWidgetStyle(it) },
             onSelectWidgetOpacity = { viewModel.setWidgetOpacity(it) },
             onDismiss = { viewModel.showThemeDialog(false) }
@@ -813,9 +815,11 @@ fun LiveWidgetPreviewCard(
 @Composable
 fun ThemeSettingsDialog(
     isDynamicColor: Boolean,
+    isOledMode: Boolean,
     widgetStyle: String,
     widgetOpacity: Int,
     onToggleDynamicColor: (Boolean) -> Unit,
+    onToggleOledMode: (Boolean) -> Unit,
     onSelectWidgetStyle: (String) -> Unit,
     onSelectWidgetOpacity: (Int) -> Unit,
     onDismiss: () -> Unit
@@ -909,6 +913,10 @@ fun ThemeSettingsDialog(
                             modifier = Modifier.testTag("monet_toggle_switch")
                         )
                     }
+                }
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("OLED чорний режим", style = MaterialTheme.typography.titleSmall)
+                    Switch(checked = isOledMode, onCheckedChange = onToggleOledMode)
                 }
 
                 // Section 2: System palette swatches
