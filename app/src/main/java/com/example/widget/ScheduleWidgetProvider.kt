@@ -334,6 +334,12 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             Color.parseColor("#FF8A65")
         }
 
+        // Explicitly restore static palette colors when Monet is disabled.
+        if (!isMonetActive) {
+            views.setTextColor(R.id.widget_title, if (style == ScheduleRepository.WIDGET_STYLE_LIGHT) Color.parseColor("#1D1B20") else Color.WHITE)
+            views.setTextColor(R.id.widget_day_info, if (style == ScheduleRepository.WIDGET_STYLE_LIGHT) Color.parseColor("#49454F") else Color.LTGRAY)
+        }
+
         // Apply dynamic accent color to header icon, refresh button, and more pairs text
         views.setInt(R.id.widget_btn_refresh, "setColorFilter", accentColor)
         views.setInt(R.id.widget_app_icon, "setColorFilter", accentColor)

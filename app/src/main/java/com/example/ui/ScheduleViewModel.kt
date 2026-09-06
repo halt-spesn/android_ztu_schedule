@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -43,6 +44,7 @@ data class ScheduleUiState(
     val isWidgetGuideVisible: Boolean = false,
     val isOffline: Boolean = false,
     val todayDateStr: String = ""
+    , val clockTick: Long = 0L
 ) {
     val displayGroupName: String
         get() = scheduleData?.groupName?.ifBlank { null }
@@ -137,6 +139,12 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         // Refresh from remote on startup
         refreshSchedule(silent = false)
         loadGroups()
+        viewModelScope.launch {
+            while (true) {
+                _uiState.update { it.copy(clockTick = System.currentTimeMillis()) }
+                delay(30_000)
+            }
+        }
     }
 
     private fun observeDatabaseSchedule(groupId: String) {
