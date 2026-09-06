@@ -969,8 +969,7 @@ fun ThemeSettingsDialog(
                     listOf(
                         "✨ Скло" to ScheduleRepository.WIDGET_STYLE_GLASS,
                         "🎨 Monet" to ScheduleRepository.WIDGET_STYLE_MONET,
-                        "🌑 Темний" to ScheduleRepository.WIDGET_STYLE_DARK,
-                        "☀️ Світлий" to ScheduleRepository.WIDGET_STYLE_LIGHT
+                        "🌑 Темний" to ScheduleRepository.WIDGET_STYLE_DARK
                     ).forEach { (label, styleKey) ->
                         val isSelected = widgetStyle == styleKey
                         FilterChip(
