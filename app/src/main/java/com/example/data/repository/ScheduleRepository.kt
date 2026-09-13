@@ -117,6 +117,7 @@ class ScheduleRepository(
 
     fun setSubgroupFilter(filter: String) {
         prefs.edit().putString(KEY_SUBGROUP_FILTER, filter).apply()
+        notifyWidgetUpdate()
     }
 
     fun observeSchedule(groupId: String): Flow<ScheduleData?> {

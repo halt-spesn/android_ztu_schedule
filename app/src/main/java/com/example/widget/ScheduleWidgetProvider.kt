@@ -177,12 +177,21 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widget_btn_refresh, refreshPendingIntent)
 
             // Load today's pairs safely
-            val pairs = try {
+            val rawPairs = try {
                 repo.getTodayPairs(groupId)
             } catch (e: Exception) {
                 Log.e("ScheduleWidget", "Could not load today pairs", e)
                 emptyList()
             }
+
+            // Apply subgroup filter — same logic as the main app
+            val subgroupFilter = repo.getSubgroupFilter()
+            val pairs = when (subgroupFilter) {
+                "підгр. 1" -> rawPairs.filter { it.subgroup.isEmpty() || "1" in it.subgroup }
+                "підгр. 2" -> rawPairs.filter { it.subgroup.isEmpty() || "2" in it.subgroup }
+                else -> rawPairs // "ALL"
+            }
+
             val orderedPairs = pairs.sortedWith(compareBy<SchedulePair> {
                 when (it.calculateStatus(true)) {
                     PairStatus.CURRENT -> 0
