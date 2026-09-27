@@ -51,7 +51,8 @@ data class SchedulePair(
     val roomUrl: String = "",
     val teacher: String,
     val teacherUrl: String = "",
-    val subgroup: String = "" // "підгр. 1", "підгр. 2" or empty
+    val subgroup: String = "", // "підгр. 1", "підгр. 2" or empty
+    val teacherNote: String = "" // Notes/comments from teacher (from cabinet.ztu.edu.ua)
 ) {
     val lessonType: LessonType
         get() = LessonType.fromString(kind)

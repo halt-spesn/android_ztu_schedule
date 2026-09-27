@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudOff
@@ -48,9 +49,21 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,6 +73,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -83,14 +97,18 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.model.SchedulePair
 import com.example.ui.components.CurrentPairBanner
 import com.example.ui.components.DaySelector
 import com.example.ui.components.GroupSelectionDialog
 import com.example.ui.components.PairCard
+import com.example.ui.components.PairDetailsDialog
 import com.example.ui.components.WeekTabs
 import com.example.ui.theme.SleekBorderPurple
 import com.example.ui.theme.ZtuAccent
@@ -106,6 +124,7 @@ fun ScheduleScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var isSearchExpanded by remember { mutableStateOf(false) }
+    var selectedPairForDetails by remember { mutableStateOf<SchedulePair?>(null) }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { msg ->
@@ -208,6 +227,30 @@ fun ScheduleScreen(
                             contentDescription = "Оформлення та тема",
                             tint = MaterialTheme.colorScheme.primary
                         )
+                    }
+
+                    // Cabinet Student Portal button
+                    IconButton(
+                        onClick = { viewModel.showCabinetDialog(true) },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .testTag("cabinet_button")
+                    ) {
+                        Box(contentAlignment = Alignment.TopEnd) {
+                            Icon(
+                                imageVector = Icons.Default.School,
+                                contentDescription = "Кабінет студента ЖТУ",
+                                tint = if (uiState.isCabinetLoggedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (uiState.isCabinetLoggedIn) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary)
+                                )
+                            }
+                        }
                     }
 
                     // Home Screen Widget info button
@@ -495,12 +538,20 @@ fun ScheduleScreen(
                     // Active or upcoming pair banner on top
                     if (activePair != null) {
                         item {
-                            CurrentPairBanner(pair = activePair, isCurrent = true)
+                            CurrentPairBanner(
+                                pair = activePair,
+                                isCurrent = true,
+                                onClick = { selectedPairForDetails = activePair }
+                            )
                             Spacer(modifier = Modifier.height(4.dp))
                         }
                     } else if (nextPair != null) {
                         item {
-                            CurrentPairBanner(pair = nextPair, isCurrent = false)
+                            CurrentPairBanner(
+                                pair = nextPair,
+                                isCurrent = false,
+                                onClick = { selectedPairForDetails = nextPair }
+                            )
                             Spacer(modifier = Modifier.height(4.dp))
                         }
                     }
@@ -522,13 +573,35 @@ fun ScheduleScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "UP NEXT • РОЗКЛАД ПАР",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    letterSpacing = 1.sp
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "UP NEXT • РОЗКЛАД ПАР",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        letterSpacing = 1.sp
+                                    )
+
+                                    val notesCount = uiState.currentDayNotesCount
+                                    if (notesCount > 0) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f))
+                                        ) {
+                                            Text(
+                                                text = "📝 $notesCount ${if (notesCount == 1) "примітка" else if (notesCount in 2..4) "примітки" else "приміток"}",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
 
                                 Text(
                                     text = "${pairs.size} ${if (pairs.size == 1) "пара" else if (pairs.size in 2..4) "пари" else "пар"}",
@@ -543,7 +616,8 @@ fun ScheduleScreen(
                             val isToday = uiState.isCurrentDaySelected
                             PairCard(
                                 pair = pair,
-                                isToday = isToday
+                                isToday = isToday,
+                                onClick = { selectedPairForDetails = pair }
                             )
                         }
                     }
@@ -609,6 +683,35 @@ fun ScheduleScreen(
             onSelectWidgetStyle = { viewModel.setWidgetStyle(it) },
             onSelectWidgetOpacity = { viewModel.setWidgetOpacity(it) },
             onDismiss = { viewModel.showThemeDialog(false) }
+        )
+    }
+
+    // Cabinet Student Account Dialog
+    if (uiState.isCabinetDialogVisible) {
+        CabinetDialog(
+            isLoggedIn = uiState.isCabinetLoggedIn,
+            username = uiState.cabinetUsername,
+            studentName = uiState.cabinetStudentName,
+            useCabinetSchedule = uiState.useCabinetSchedule,
+            isLoading = uiState.isCabinetLoading,
+            errorMessage = uiState.cabinetErrorMessage,
+            isOledMode = uiState.isOledMode,
+            notesCount = uiState.totalNotesCount,
+            onLogin = { u, p -> viewModel.loginToCabinet(u, p) },
+            onLogout = { viewModel.logoutFromCabinet() },
+            onToggleUseCabinet = { viewModel.toggleUseCabinetSchedule(it) },
+            onRefresh = { viewModel.refreshSchedule() },
+            onDismiss = { viewModel.showCabinetDialog(false) }
+        )
+    }
+
+    // Pair Details & Teacher Notes Dialog
+    selectedPairForDetails?.let { pair ->
+        PairDetailsDialog(
+            pair = pair,
+            isOledMode = uiState.isOledMode,
+            isCabinetLoggedIn = uiState.isCabinetLoggedIn,
+            onDismiss = { selectedPairForDetails = null }
         )
     }
 }
@@ -1273,3 +1376,384 @@ fun ThemeSettingsDialog(
         shape = RoundedCornerShape(26.dp)
     )
 }
+
+@Composable
+fun CabinetDialog(
+    isLoggedIn: Boolean,
+    username: String,
+    studentName: String,
+    useCabinetSchedule: Boolean,
+    isLoading: Boolean,
+    errorMessage: String?,
+    isOledMode: Boolean,
+    notesCount: Int = 0,
+    onLogin: (String, String) -> Unit,
+    onLogout: () -> Unit,
+    onToggleUseCabinet: (Boolean) -> Unit,
+    onRefresh: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val isOledActive = isOledMode && isDarkTheme
+    var inputUsername by remember { mutableStateOf(username) }
+    var inputPassword by remember { mutableStateOf("") }
+    var isPasswordVisible by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        containerColor = if (isOledActive) Color.Black else AlertDialogDefaults.containerColor,
+        modifier = if (isOledActive) Modifier.border(1.dp, Color(0xFF222222), RoundedCornerShape(26.dp)) else Modifier,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.School,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = if (isLoggedIn) "Кабінет студента" else "Вхід до кабінету ЖТУ",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isOledActive) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "cabinet.ztu.edu.ua",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                if (!isLoggedIn) {
+                    Text(
+                        text = "Увійдіть зі своїм логіном та паролем освітнього порталу ЖТУ, щоб синхронізувати персональний розклад та отримувати примітки викладачів до кожної пари.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    OutlinedTextField(
+                        value = inputUsername,
+                        onValueChange = { inputUsername = it },
+                        label = { Text("Логін") },
+                        placeholder = { Text("Логін (напр. student)") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Person, contentDescription = null)
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        enabled = !isLoading
+                    )
+
+                    OutlinedTextField(
+                        value = inputPassword,
+                        onValueChange = { inputPassword = it },
+                        label = { Text("Пароль") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Lock, contentDescription = null)
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                Icon(
+                                    imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = if (isPasswordVisible) "Сховати пароль" else "Показати пароль"
+                                )
+                            }
+                        },
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        enabled = !isLoading
+                    )
+
+                    if (!errorMessage.isNullOrBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = errorMessage,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Логін і пароль зберігаються лише локально на пристрої та передаються безпосередньо до сервера університету.",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    // Logged in state
+                    Card(
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = studentName.ifBlank { username },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (username.isNotBlank()) "@$username • Підключено" else "Підключено",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
+                    // Notes count status banner
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = if (notesCount > 0) {
+                                    "Синхронізовано з кабінетом: знайдено $notesCount ${if (notesCount == 1) "примітку" else if (notesCount in 2..4) "примітки" else "приміток"} від викладачів."
+                                } else {
+                                    "Синхронізовано з кабінетом: викладачі наразі не залишили нових приміток."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+
+                    // Schedule Source Switch
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Розклад з Кабінету",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Відображати примітки та завдання викладачів",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Switch(
+                                checked = useCabinetSchedule,
+                                onCheckedChange = onToggleUseCabinet
+                            )
+                        }
+                    }
+
+                    // Sync now button
+                    OutlinedButton(
+                        onClick = {
+                            onRefresh()
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Оновити розклад зараз")
+                    }
+
+                    // Diagnostic button to copy raw HTML
+                    val context = LocalContext.current
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                val file = java.io.File(context.cacheDir, "last_cabinet_schedule.html")
+                                val content = if (file.exists()) file.readText() else "Файл last_cabinet_schedule.html ще не створено."
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("Cabinet HTML", content))
+                                val hasLaag = content.contains("ЛААГ", ignoreCase = true)
+                                val msg = if (hasLaag) "HTML скопійовано! (Знайдено 'ЛААГ')" else "HTML скопійовано! ('ЛААГ' відсутній у завантаженому файлі)"
+                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Помилка: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Скопіювати HTML кабінету")
+                    }
+
+                    // Logout button
+                    OutlinedButton(
+                        onClick = onLogout,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Вийти з акаунта", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (!isLoggedIn) {
+                Button(
+                    onClick = {
+                        onLogin(inputUsername, inputPassword)
+                    },
+                    enabled = !isLoading && inputUsername.isNotBlank() && inputPassword.isNotBlank(),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Увійти", fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("Закрити", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        },
+        dismissButton = {
+            if (!isLoggedIn) {
+                TextButton(
+                    onClick = onDismiss,
+                    enabled = !isLoading
+                ) {
+                    Text("Скасувати")
+                }
+            }
+        },
+        shape = RoundedCornerShape(26.dp)
+    )
+}
+

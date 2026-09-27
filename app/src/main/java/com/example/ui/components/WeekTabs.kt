@@ -1,10 +1,9 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -22,14 +21,16 @@ fun WeekTabs(
     onWeekSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (weeks.isEmpty()) return
+    // Hide week 0 (not relevant during the semester), keeping it safely preserved in data structures
+    val visibleWeeks = weeks.filter { it.weekNumber != 0 }.ifEmpty { weeks }
+    if (visibleWeeks.isEmpty()) return
 
-    val selectedIndex = weeks.indexOfFirst { it.weekNumber == selectedWeekNumber }.coerceAtLeast(0)
+    val selectedIndex = visibleWeeks.indexOfFirst { it.weekNumber == selectedWeekNumber }
+        .let { if (it >= 0) it else 0 }
 
-    ScrollableTabRow(
+    TabRow(
         selectedTabIndex = selectedIndex,
         modifier = modifier.fillMaxWidth(),
-        edgePadding = 16.dp,
         containerColor = MaterialTheme.colorScheme.surface,
         indicator = { tabPositions ->
             if (selectedIndex < tabPositions.size) {
@@ -41,7 +42,7 @@ fun WeekTabs(
             }
         }
     ) {
-        weeks.forEachIndexed { index, week ->
+        visibleWeeks.forEachIndexed { index, week ->
             val isSelected = index == selectedIndex
             Tab(
                 selected = isSelected,
@@ -53,8 +54,7 @@ fun WeekTabs(
                         fontSize = 14.sp,
                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                },
-                modifier = Modifier.padding(horizontal = 4.dp)
+                }
             )
         }
     }

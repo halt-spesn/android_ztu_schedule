@@ -385,6 +385,9 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         if (pair.room.isNotEmpty()) {
             metaParts.add("ауд. ${pair.room}")
         }
+        if (pair.teacherNote.isNotEmpty()) {
+            metaParts.add("📝 ${pair.teacherNote}")
+        }
         views.setTextViewText(metaId, metaParts.joinToString(" • "))
     }
 }

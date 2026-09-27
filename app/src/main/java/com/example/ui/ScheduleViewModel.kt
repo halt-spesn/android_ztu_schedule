@@ -35,17 +35,25 @@ data class ScheduleUiState(
     val isThemeDialogVisible: Boolean = false,
     val widgetStyle: String = ScheduleRepository.WIDGET_STYLE_MONET,
     val widgetOpacity: Int = 85,
-    val selectedWeekNumber: Int = 0,
+    val selectedWeekNumber: Int = 1,
     val selectedDayIndex: Int = 0,
     val subgroupFilter: String = "ALL", // "ALL", "підгр. 1", "підгр. 2"
+    val onlyWithNotes: Boolean = false,
     val searchQuery: String = "",
     val cachedGroups: List<ScheduleGroup> = emptyList(),
     val isLoadingGroups: Boolean = false,
     val isGroupDialogVisible: Boolean = false,
     val isWidgetGuideVisible: Boolean = false,
     val isOffline: Boolean = false,
-    val todayDateStr: String = ""
-    , val clockTick: Long = 0L
+    val todayDateStr: String = "",
+    val clockTick: Long = 0L,
+    val isCabinetLoggedIn: Boolean = false,
+    val cabinetUsername: String = "",
+    val cabinetStudentName: String = "",
+    val useCabinetSchedule: Boolean = false,
+    val isCabinetDialogVisible: Boolean = false,
+    val isCabinetLoading: Boolean = false,
+    val cabinetErrorMessage: String? = null
 ) {
     val displayGroupName: String
         get() = scheduleData?.groupName?.ifBlank { null }
@@ -59,11 +67,21 @@ data class ScheduleUiState(
 
     val currentWeek: ScheduleWeek?
         get() = scheduleData?.weeks?.find { it.weekNumber == selectedWeekNumber }
+            ?: scheduleData?.weeks?.find { it.weekNumber != 0 }
             ?: scheduleData?.weeks?.firstOrNull()
 
     val currentDay: ScheduleDay?
         get() = currentWeek?.days?.find { it.dayIndex == selectedDayIndex }
             ?: currentWeek?.days?.firstOrNull()
+
+    val currentDayNotesCount: Int
+        get() = currentDay?.pairs?.count { it.teacherNote.isNotBlank() } ?: 0
+
+    val currentWeekNotesCount: Int
+        get() = currentWeek?.days?.sumOf { day -> day.pairs.count { it.teacherNote.isNotBlank() } } ?: 0
+
+    val totalNotesCount: Int
+        get() = scheduleData?.weeks?.sumOf { w -> w.days.sumOf { d -> d.pairs.count { p -> p.teacherNote.isNotBlank() } } } ?: 0
 
     val filteredPairs: List<SchedulePair>
         get() {
@@ -82,7 +100,8 @@ data class ScheduleUiState(
                     pair.room.lowercase(Locale.ROOT).contains(q) ||
                     pair.kind.lowercase(Locale.ROOT).contains(q)
                 }
-                matchesSubgroup && matchesSearch
+                val matchesNotes = if (onlyWithNotes) pair.teacherNote.isNotBlank() else true
+                matchesSubgroup && matchesSearch && matchesNotes
             }
         }
 
@@ -130,7 +149,11 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
             widgetOpacity = repository.getWidgetOpacity(),
             subgroupFilter = repository.getSubgroupFilter(),
             todayDateStr = getTodayFormattedDate(),
-            selectedDayIndex = getCurrentDayIndex()
+            selectedDayIndex = getCurrentDayIndex(),
+            isCabinetLoggedIn = repository.isCabinetLoggedIn(),
+            cabinetUsername = repository.getCabinetUsername(),
+            cabinetStudentName = repository.getCabinetStudentName(),
+            useCabinetSchedule = repository.isCabinetLoggedIn() && repository.getScheduleSource() == ScheduleRepository.SOURCE_CABINET
         )
     )
     val uiState: StateFlow<ScheduleUiState> = _uiState.asStateFlow()
@@ -163,10 +186,10 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                         } else null
 
                         val weekNum = targetSelection?.first
-                            ?: if (cachedData.weeks.any { it.weekNumber == state.selectedWeekNumber }) {
+                            ?: if (cachedData.weeks.any { it.weekNumber == state.selectedWeekNumber && it.weekNumber != 0 }) {
                                 state.selectedWeekNumber
                             } else {
-                                cachedData.weeks.firstOrNull()?.weekNumber ?: 0
+                                cachedData.weeks.firstOrNull { it.weekNumber != 0 }?.weekNumber ?: 1
                             }
 
                         val dayIdx = targetSelection?.second
@@ -204,13 +227,20 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                         determineCurrentWeekAndDay(updatedData)
                     } else null
 
+                    val weekNum = targetSelection?.first
+                        ?: if (updatedData?.weeks?.any { it.weekNumber == state.selectedWeekNumber && it.weekNumber != 0 } == true) {
+                            state.selectedWeekNumber
+                        } else {
+                            updatedData?.weeks?.firstOrNull { it.weekNumber != 0 }?.weekNumber ?: 1
+                        }
+
                     state.copy(
                         isRefreshing = false,
                         isLoading = false,
                         isOffline = false,
                         scheduleData = updatedData,
                         selectedGroupName = updatedData?.groupName?.ifBlank { state.selectedGroupName } ?: state.selectedGroupName,
-                        selectedWeekNumber = targetSelection?.first ?: state.selectedWeekNumber,
+                        selectedWeekNumber = weekNum,
                         selectedDayIndex = targetSelection?.second ?: state.selectedDayIndex,
                         todayDateStr = getTodayFormattedDate()
                     )
@@ -315,6 +345,10 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(subgroupFilter = subgroup) }
     }
 
+    fun toggleOnlyWithNotes(enabled: Boolean) {
+        _uiState.update { it.copy(onlyWithNotes = enabled) }
+    }
+
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
     }
@@ -328,6 +362,59 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
 
     fun showWidgetGuide(visible: Boolean) {
         _uiState.update { it.copy(isWidgetGuideVisible = visible) }
+    }
+
+    fun showCabinetDialog(visible: Boolean) {
+        _uiState.update { it.copy(isCabinetDialogVisible = visible, cabinetErrorMessage = null) }
+    }
+
+    fun loginToCabinet(username: String, password: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCabinetLoading = true, cabinetErrorMessage = null) }
+            val result = repository.cabinetLogin(username, password)
+            if (result.isSuccess) {
+                _uiState.update {
+                    it.copy(
+                        isCabinetLoading = false,
+                        isCabinetLoggedIn = true,
+                        cabinetUsername = repository.getCabinetUsername(),
+                        cabinetStudentName = repository.getCabinetStudentName(),
+                        useCabinetSchedule = true,
+                        isCabinetDialogVisible = false
+                    )
+                }
+                refreshSchedule(silent = false)
+            } else {
+                val err = result.exceptionOrNull()?.message ?: "Помилка входу в кабінет"
+                _uiState.update {
+                    it.copy(
+                        isCabinetLoading = false,
+                        cabinetErrorMessage = err
+                    )
+                }
+            }
+        }
+    }
+
+    fun logoutFromCabinet() {
+        repository.cabinetLogout()
+        _uiState.update {
+            it.copy(
+                isCabinetLoggedIn = false,
+                cabinetUsername = "",
+                cabinetStudentName = "",
+                useCabinetSchedule = false
+            )
+        }
+        refreshSchedule()
+    }
+
+    fun toggleUseCabinetSchedule(enabled: Boolean) {
+        repository.setScheduleSource(
+            if (enabled) ScheduleRepository.SOURCE_CABINET else ScheduleRepository.SOURCE_PUBLIC
+        )
+        _uiState.update { it.copy(useCabinetSchedule = enabled) }
+        refreshSchedule()
     }
 
     fun clearErrorMessage() {
@@ -348,8 +435,9 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
 
         val todayDate = getTodayFormattedDate()
 
-        // 1. Priority: check university's marked day (th.is-marked in HTML)
+        // 1. Priority: check university's marked day (th.is-marked in HTML), preferring non-zero weeks
         for (week in weeks) {
+            if (week.weekNumber == 0 && weeks.any { it.weekNumber != 0 }) continue
             val markedDay = week.days.find { it.isMarked }
             if (markedDay != null) {
                 return Pair(week.weekNumber, markedDay.dayIndex)

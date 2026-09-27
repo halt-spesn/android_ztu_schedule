@@ -22,7 +22,8 @@ data class PairEntity(
     val roomUrl: String,
     val teacher: String,
     val teacherUrl: String,
-    val subgroup: String
+    val subgroup: String,
+    val teacherNote: String = ""
 ) {
     fun toDomainModel(): SchedulePair {
         return SchedulePair(
@@ -39,7 +40,8 @@ data class PairEntity(
             roomUrl = roomUrl,
             teacher = teacher,
             teacherUrl = teacherUrl,
-            subgroup = subgroup
+            subgroup = subgroup,
+            teacherNote = teacherNote
         )
     }
 
@@ -60,7 +62,8 @@ data class PairEntity(
                 roomUrl = pair.roomUrl,
                 teacher = pair.teacher,
                 teacherUrl = pair.teacherUrl,
-                subgroup = pair.subgroup
+                subgroup = pair.subgroup,
+                teacherNote = pair.teacherNote
             )
         }
     }
