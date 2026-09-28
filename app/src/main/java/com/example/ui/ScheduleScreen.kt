@@ -170,7 +170,7 @@ fun ScheduleScreen(
                             Icon(
                                 imageVector = Icons.Default.School,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -590,7 +590,7 @@ fun ScheduleScreen(
                                         Surface(
                                             shape = RoundedCornerShape(6.dp),
                                             color = MaterialTheme.colorScheme.tertiaryContainer,
-                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f))
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f))
                                         ) {
                                             Text(
                                                 text = "📝 $notesCount ${if (notesCount == 1) "примітка" else if (notesCount in 2..4) "примітки" else "приміток"}",
@@ -1584,8 +1584,8 @@ fun CabinetDialog(
                     // Notes count status banner
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -1596,7 +1596,7 @@ fun CabinetDialog(
                             Icon(
                                 imageVector = Icons.Default.Info,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
@@ -1607,6 +1607,7 @@ fun CabinetDialog(
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         }

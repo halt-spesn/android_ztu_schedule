@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -233,8 +234,8 @@ fun PairDetailsDialog(
                 if (pair.teacherNote.isNotBlank()) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -248,7 +249,7 @@ fun PairDetailsDialog(
                                 Icon(
                                     imageVector = Icons.Default.EditNote,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
@@ -263,6 +264,7 @@ fun PairDetailsDialog(
                                 Text(
                                     text = pair.teacherNote,
                                     style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                                     lineHeight = 20.sp
                                 )
@@ -301,7 +303,11 @@ fun PairDetailsDialog(
                                     Toast.makeText(context, "Примітку скопійовано!", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f))
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ContentCopy,

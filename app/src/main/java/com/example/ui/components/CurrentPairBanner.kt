@@ -41,7 +41,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.SchedulePair
-import com.example.ui.theme.SleekBorderPurple
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
@@ -156,7 +155,7 @@ fun CurrentPairBanner(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ),
-            border = BorderStroke(1.dp, SleekBorderPurple),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
@@ -187,14 +186,14 @@ fun CurrentPairBanner(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f))
+                                    color = MaterialTheme.colorScheme.surface,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                                 ) {
                                     Text(
                                         text = "📝 Примітка",
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
@@ -212,14 +211,15 @@ fun CurrentPairBanner(
                         Text(
                             text = metaParts.joinToString(" • "),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.90f)
                         )
 
                         if (pair.teacher.isNotEmpty()) {
                             Text(
                                 text = pair.teacher,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f),
                                 modifier = Modifier.padding(top = 2.dp)
                             )
                         }
@@ -228,8 +228,8 @@ fun CurrentPairBanner(
                             Spacer(modifier = Modifier.height(8.dp))
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
@@ -240,14 +240,15 @@ fun CurrentPairBanner(
                                         imageVector = Icons.Default.EditNote,
                                         contentDescription = null,
                                         modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.tertiary
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = pair.teacherNote.replace("\n", " "),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f)
@@ -257,7 +258,7 @@ fun CurrentPairBanner(
                                         text = "Деталі →",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.tertiary
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
@@ -271,7 +272,7 @@ fun CurrentPairBanner(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f)),
+                            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -296,7 +297,7 @@ fun CurrentPairBanner(
                             .weight(1f)
                             .height(6.dp)
                             .clip(RoundedCornerShape(50))
-                            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.28f))
+                            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.22f))
                     ) {
                         if (isCurrent) {
                             Box(
@@ -313,7 +314,7 @@ fun CurrentPairBanner(
                         text = pair.timeRange,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.90f)
                     )
                 }
             }

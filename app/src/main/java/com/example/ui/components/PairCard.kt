@@ -50,8 +50,6 @@ import com.example.ui.theme.ColorLab
 import com.example.ui.theme.ColorLecture
 import com.example.ui.theme.ColorMeeting
 import com.example.ui.theme.ColorPractice
-import com.example.ui.theme.SleekBorderPurple
-import com.example.ui.theme.SleekLightOutlineVariant
 
 @Composable
 fun PairCard(
@@ -81,13 +79,13 @@ fun PairCard(
 
     val cardBorder = when {
         isCurrent -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        hasNote -> BorderStroke(1.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.65f))
+        hasNote -> BorderStroke(1.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f))
         isPast -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
         else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     }
 
     val containerColor = when {
-        isCurrent -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
+        isCurrent -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
         isPast -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         else -> MaterialTheme.colorScheme.surface
     }
@@ -144,7 +142,7 @@ fun PairCard(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (isCurrent) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     letterSpacing = 0.5.sp
                 )
             }
@@ -188,7 +186,7 @@ fun PairCard(
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = MaterialTheme.colorScheme.tertiaryContainer,
-                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f))
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f))
                         ) {
                             Text(
                                 text = "📝 Примітка",
@@ -241,7 +239,9 @@ fun PairCard(
                 Text(
                     text = metaParts.joinToString(" • "),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isCurrent) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.90f)
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (isCurrent) FontWeight.Medium else FontWeight.Normal,
                     fontSize = 12.sp
                 )
 
@@ -249,7 +249,8 @@ fun PairCard(
                     Text(
                         text = pair.teacher,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                        color = if (isCurrent) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f)
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.88f),
                         fontSize = 11.sp,
                         modifier = Modifier.padding(top = 1.dp)
                     )
@@ -258,26 +259,27 @@ fun PairCard(
                 if (hasNote) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)),
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.EditNote,
                                 contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                tint = MaterialTheme.colorScheme.tertiary
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = pair.teacherNote.replace("\n", " "),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                fontWeight = FontWeight.Medium,
                                 fontSize = 11.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -288,7 +290,7 @@ fun PairCard(
                                 text = "Деталі →",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.tertiary
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         }
                     }
@@ -313,12 +315,12 @@ fun PairCard(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = null,
                                 modifier = Modifier.size(12.dp),
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(modifier = Modifier.width(2.dp))
                             Text(
                                 text = "Зараз",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -342,19 +344,20 @@ fun PairCard(
                     }
                 }
                 hasNote -> {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.tertiaryContainer),
-                        contentAlignment = Alignment.Center
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.75f)),
+                        modifier = Modifier.size(28.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.EditNote,
-                            contentDescription = "Є примітка",
-                            modifier = Modifier.size(17.dp),
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.EditNote,
+                                contentDescription = "Є примітка",
+                                modifier = Modifier.size(17.dp),
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
                     }
                 }
                 else -> {
