@@ -33,7 +33,8 @@ import java.util.Locale
 
 class ScheduleRepository(
     private val context: Context,
-    private val api: ZtuScheduleApi = ZtuScheduleApi(),
+    val cabinetAuth: CabinetAuthManager = CabinetAuthManager(context),
+    private val api: ZtuScheduleApi = ZtuScheduleApi(cabinetAuth),
     private val dao: ScheduleDao = AppDatabase.getInstance(context).scheduleDao()
 ) {
     companion object {
@@ -63,7 +64,6 @@ class ScheduleRepository(
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    val cabinetAuth = CabinetAuthManager(context)
 
     fun isDynamicColorEnabled(): Boolean {
         // Material You / Monet is supported on Android 12 (API 31, S) and newer; default to true there

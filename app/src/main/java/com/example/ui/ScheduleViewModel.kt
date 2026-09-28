@@ -254,7 +254,10 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                         isLoading = false,
                         isOffline = true,
                         errorMessage = if (!silent) {
-                            if (hasCached) {
+                            val err = result.exceptionOrNull()?.message
+                            if (err?.contains("авториз", ignoreCase = true) == true || err?.contains("увійдіть", ignoreCase = true) == true) {
+                                err
+                            } else if (hasCached) {
                                 "Не вдалося оновити розклад. Показано збережену версію."
                             } else {
                                 "Не вдалося завантажити розклад для групи. Перевірте з'єднання з інтернетом."

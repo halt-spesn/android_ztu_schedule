@@ -25,6 +25,9 @@ class CabinetAuthManager(private val context: Context) {
         const val SCHEDULE_URL = "$BASE_URL/site/schedule"
         const val INDEX_URL = "$BASE_URL/site/index"
 
+        const val ROZKLAD_BASE_URL = "https://rozklad.ztu.edu.ua"
+        const val ROZKLAD_LOGIN_URL = "$ROZKLAD_BASE_URL/schedule/users/login"
+
         private const val PREFS_NAME = "ztu_cabinet_auth_prefs"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_USERNAME = "username"
@@ -113,7 +116,7 @@ class CabinetAuthManager(private val context: Context) {
     }
 
     // Client with followRedirects(false) solely for POST login to detect HTTP 302
-    private val loginHttpClient: OkHttpClient = OkHttpClient.Builder()
+    val loginHttpClient: OkHttpClient = OkHttpClient.Builder()
         .cookieJar(cookieJar)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
@@ -121,7 +124,7 @@ class CabinetAuthManager(private val context: Context) {
         .build()
 
     // Client with followRedirects(true) for GET requests (schedule, index, etc.)
-    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+    val httpClient: OkHttpClient = OkHttpClient.Builder()
         .cookieJar(cookieJar)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
@@ -131,11 +134,79 @@ class CabinetAuthManager(private val context: Context) {
     private val loginMutex = kotlinx.coroutines.sync.Mutex()
     @Volatile private var lastLoginSuccessMillis: Long = 0L
 
+    private val rozkladLoginMutex = kotlinx.coroutines.sync.Mutex()
+    @Volatile private var lastRozkladLoginSuccessMillis: Long = 0L
+
     fun isLoggedIn(): Boolean = prefs.getBoolean(KEY_IS_LOGGED_IN, false)
 
     fun getUsername(): String = prefs.getString(KEY_USERNAME, "") ?: ""
 
+    fun getPassword(): String = prefs.getString(KEY_PASSWORD, "") ?: ""
+
+    fun hasCredentials(): Boolean = getUsername().isNotBlank() && getPassword().isNotBlank()
+
     fun getStudentName(): String = prefs.getString(KEY_STUDENT_NAME, "") ?: ""
+
+    suspend fun loginToRozklad(username: String? = null, password: String? = null): Result<Unit> = rozkladLoginMutex.withLock {
+        val cleanUsername = (username ?: getUsername()).trim()
+        val cleanPassword = (password ?: getPassword()).trim()
+
+        if (cleanUsername.isEmpty() || cleanPassword.isEmpty()) {
+            return@withLock Result.failure(IllegalStateException("Логін та пароль відсутні"))
+        }
+
+        val now = System.currentTimeMillis()
+        if (username == null && password == null && (now - lastRozkladLoginSuccessMillis < 15_000L)) {
+            return@withLock Result.success(Unit)
+        }
+
+        withContext(Dispatchers.IO) {
+            try {
+                val formBody = FormBody.Builder()
+                    .add("login", cleanUsername)
+                    .add("password", cleanPassword)
+                    .build()
+
+                val postRequest = Request.Builder()
+                    .url(ROZKLAD_LOGIN_URL)
+                    .post(formBody)
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 14; ZTU Schedule Mobile App)")
+                    .header("Referer", ROZKLAD_LOGIN_URL)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .build()
+
+                val postResponse = loginHttpClient.newCall(postRequest).execute()
+                val statusCode = postResponse.code
+                val postHtml = postResponse.body?.string() ?: ""
+
+                // 302 Redirect means successful authentication
+                if (statusCode in 300..399) {
+                    Log.i(TAG, "Successfully authenticated to Rozklad (HTTP $statusCode)")
+                    lastRozkladLoginSuccessMillis = System.currentTimeMillis()
+                    return@withContext Result.success(Unit)
+                }
+
+                if (statusCode == 200) {
+                    val doc = Jsoup.parse(postHtml)
+                    val errorText = doc.select(".message.error, .alert-danger").text().trim()
+                    if (errorText.isNotEmpty()) {
+                        Log.w(TAG, "Rozklad login failed: $errorText")
+                        return@withContext Result.failure(Exception(errorText))
+                    }
+                    if (!postHtml.contains("form-signin") && !postHtml.contains("name=\"login\"")) {
+                        Log.i(TAG, "Successfully authenticated to Rozklad (HTTP 200 without signin form)")
+                        lastRozkladLoginSuccessMillis = System.currentTimeMillis()
+                        return@withContext Result.success(Unit)
+                    }
+                }
+
+                Result.failure(Exception("Неправильний логін або пароль для сайту розкладу"))
+            } catch (e: Exception) {
+                Log.e(TAG, "Rozklad login error", e)
+                Result.failure(e)
+            }
+        }
+    }
 
     suspend fun login(username: String, password: String): Result<String> = withContext(Dispatchers.IO) {
         val cleanUsername = username.trim()
@@ -210,6 +281,13 @@ class CabinetAuthManager(private val context: Context) {
                     prefs.edit().putString(KEY_STUDENT_NAME, studentName).apply()
                 } catch (e: Exception) {
                     Log.w(TAG, "Could not fetch student name", e)
+                }
+
+                // Also authenticate to Rozklad with the same credentials
+                try {
+                    loginToRozklad(cleanUsername, cleanPassword)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not pre-authenticate Rozklad", e)
                 }
 
                 return@withContext Result.success(cleanUsername)
